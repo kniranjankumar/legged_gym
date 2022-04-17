@@ -170,7 +170,7 @@ def get_args():
         description="RL Policy",
         custom_parameters=custom_parameters)
 
-    # name allignment
+    # name alignment
     args.sim_device_id = args.compute_device_id
     args.sim_device = args.sim_device_type
     if args.sim_device=='cuda':

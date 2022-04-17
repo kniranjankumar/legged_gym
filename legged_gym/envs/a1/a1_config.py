@@ -82,4 +82,9 @@ class A1RoughCfgPPO( LeggedRobotCfgPPO ):
         run_name = ''
         experiment_name = 'rough_a1'
 
-  
+class A1FlatCfg( A1RoughCfg):
+    class terrain( A1RoughCfg.terrain ):
+        mesh_type = 'plane'
+        measure_heights = False
+    class env(A1RoughCfg.env ):
+        num_envs = 50

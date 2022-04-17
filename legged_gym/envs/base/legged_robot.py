@@ -163,6 +163,7 @@ class LeggedRobot(BaseTask):
         
         # reset robot states
         self._reset_dofs(env_ids)
+        print(env_ids)
         self._reset_root_states(env_ids)
 
         self._resample_commands(env_ids)
@@ -209,13 +210,13 @@ class LeggedRobot(BaseTask):
     def compute_observations(self):
         """ Computes observations
         """
-        self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,
-                                    self.base_ang_vel  * self.obs_scales.ang_vel,
-                                    self.projected_gravity,
-                                    self.commands[:, :3] * self.commands_scale,
-                                    (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,
-                                    self.dof_vel * self.obs_scales.dof_vel,
-                                    self.actions
+        self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
+                                    self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
+                                    self.projected_gravity,                                             #3
+                                    self.commands[:, :3] * self.commands_scale,                         #3
+                                    (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
+                                    self.dof_vel * self.obs_scales.dof_vel,                             #12
+                                    self.actions                                                        #12
                                     ),dim=-1)
         # add perceptive inputs if not blind
         if self.cfg.terrain.measure_heights:
