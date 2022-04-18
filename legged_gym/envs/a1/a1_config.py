@@ -88,3 +88,8 @@ class A1FlatCfg( A1RoughCfg):
         measure_heights = False
     class env(A1RoughCfg.env ):
         num_envs = 50
+        
+    class viewer:
+        ref_env = 0
+        pos = [0, 10, 10]  # [m]
+        lookat = [5., 5., 0.]  # [m]

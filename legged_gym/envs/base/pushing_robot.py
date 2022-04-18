@@ -12,8 +12,9 @@ import torch
             
 class PushingRobot(LeggedRobot):
     def __init__(self,*args,**kwargs):
-        super(PushingRobot, self).__init__(*args,**kwargs)
         self.num_actors = 2
+        super(PushingRobot, self).__init__(*args,**kwargs)
+
         
     def get_privileged_obs(self):
         ## return box location
@@ -31,8 +32,9 @@ class PushingRobot(LeggedRobot):
         self.gym.refresh_net_contact_force_tensor(self.sim)
 
         # create some wrapper tensors for different slices
-        self.root_states = gymtorch.wrap_tensor(actor_root_state)[::2,:]
-        self.cube_states = gymtorch.wrap_tensor(actor_root_state)[1::2,:]
+        self.all_root_states = gymtorch.wrap_tensor(actor_root_state)
+        self.root_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,0,:]
+        self.cube_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,1,:]
         self.dof_state = gymtorch.wrap_tensor(dof_state_tensor)#[:,0]
         self.dof_pos = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 0]
         self.dof_vel = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 1]
@@ -123,9 +125,12 @@ class PushingRobot(LeggedRobot):
             termination_contact_names.extend([s for s in body_names if name in s])
 
         asset_root = "../IsaacGym_Preview_3_Package/isaacgym/assets/"
-        asset_file = "urdf/cube.urdf"
-        cube_asset = self.gym.load_asset(self.sim, asset_root, asset_file, gymapi.AssetOptions())
-        print("loaded ball asset")
+        asset_file = "urdf/cube_big.urdf"
+        cube_asset_options = gymapi.AssetOptions()
+        # cube_asset_options.density = 0.01
+        
+        cube_asset = self.gym.load_asset(self.sim, asset_root, asset_file, cube_asset_options)
+        print("loaded 📦 asset")
         cube_pose = gymapi.Transform()
         cube_pose.r = gymapi.Quat(0, 0, 0, 1)
         # cube_pose.p = gymapi.Vec3(2, 0, 2)
@@ -141,7 +146,7 @@ class PushingRobot(LeggedRobot):
         self._get_env_origins()
         env_lower = gymapi.Vec3(0., 0., 0.)
         env_upper = gymapi.Vec3(0., 0., 0.)
-        cube_offset = gymapi.Vec3(0.5, 0., 1.5)
+        cube_offset = gymapi.Vec3(0.38, 0.1, 0.2)
         
         self.actor_handles = []
         self.envs = []
@@ -152,15 +157,16 @@ class PushingRobot(LeggedRobot):
             env_handle = self.gym.create_env(self.sim, env_lower, env_upper, int(np.sqrt(self.num_envs)))
             pos = self.env_origins[i].clone()
             cube_pose.p = gymapi.Vec3(*pos) + cube_offset
-            pos[:2] += torch_rand_float(-1., 1., (2,1), device=self.device).squeeze(1)
+            # pos[:2] += torch_rand_float(-1., 1., (2,1), device=self.device).squeeze(1)
+            pos[2] = 0.3
             start_pose.p = gymapi.Vec3(*pos)
             rigid_shape_props = self._process_rigid_shape_props(rigid_shape_props_asset, i)
             self.gym.set_asset_rigid_shape_properties(robot_asset, rigid_shape_props)
             actor_handle = self.gym.create_actor(env_handle, robot_asset, start_pose, self.cfg.asset.name, i, self.cfg.asset.self_collisions, 0)
-            self.gym.set_asset_rigid_shape_properties(cube_asset, rigid_shape_props)
+            # self.gym.set_asset_rigid_shape_properties(cube_asset, rigid_shape_props)
             
             cube_handle = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube", i, 0)
-            self.gym.set_actor_scale(env_handle, cube_handle, 4)
+            # self.gym.set_actor_scale(env_handle, cube_handle, 4)
             dof_props = self._process_dof_props(dof_props_asset, i)
             self.gym.set_actor_dof_properties(env_handle, actor_handle, dof_props)
             body_props = self.gym.get_actor_rigid_body_properties(env_handle, actor_handle)
@@ -203,13 +209,14 @@ class PushingRobot(LeggedRobot):
             env_ids_int32_robot = env_ids.to(dtype=torch.int32)*2
             env_ids_int32_cube = env_ids.to(dtype=torch.int32)*2+1
             env_ids_int32 = torch.flatten(torch.stack((env_ids.to(dtype=torch.int32)*2, env_ids.to(dtype=torch.int32)*2+1),1))
-            
-            cube_state = torch.stack([torch.tensor([0.,0.,0.]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)]*self.num_envs,0)
+            self.cube_states[env_ids] = torch.tensor([0.38, 0.1, 0.2]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)
+            self.cube_states[env_ids, :3] += self.env_origins[env_ids]
+            # cube_state = torch.stack([torch.tensor([0.,0.,0.]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)]*self.num_envs,0)
             # cube_state[:,:3] = self.root_states[:,:3]+torch.tensor([[1,0,0]],device=self.device) 
             all_bodies_root_state = torch.reshape(torch.cat((self.root_states,self.cube_states),1), (-1,13))
             self.gym.set_actor_root_state_tensor_indexed(self.sim,
-                                                        gymtorch.unwrap_tensor(all_bodies_root_state),
-                                                        gymtorch.unwrap_tensor(env_ids_int32_robot), len(env_ids_int32_robot))
+                                                        gymtorch.unwrap_tensor(self.all_root_states),
+                                                        gymtorch.unwrap_tensor(env_ids_int32), 2*len(env_ids_int32_robot))
 
     def _reset_dofs(self, env_ids):
             """ Resets DOF position and velocities of selected environmments
