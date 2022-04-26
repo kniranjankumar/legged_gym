@@ -12,7 +12,33 @@ import torch
             
 class PushingRobot(LeggedRobot):
     def __init__(self,*args,**kwargs):
-        self.num_actors = 2
+        self.igibson_asset_root = "/home/niranjan/anaconda3/envs/fetch/lib/python3.7/site-packages/igibson/data/ig_dataset/objects/"
+        self.asset_paths = ["door/8903/8903.urdf",
+                            # "trash_can/11259/11259.urdf",
+                            # "trash_can/102254/102254.urdf",
+                            # "office_chair/179/179.urdf",
+                            # "office_chair/723/723.urdf",
+                            # "office_chair/2490/2490.urdf"
+                            ]
+        self.asset_offsets = [[0.35,0.0,1.00],
+                              [2,2,1],
+                              [-2,2,1],
+                              [4,4,2],
+                              [4,-4,2],
+                              [-4,4,2]
+                              ]
+        self.cube_offset = [-0.47, -0.13, 0.5]
+        
+        self.asset_orientations = [[ 0, 0, 0.7071068, 0.7071068 ],
+                                    [0,0,0,1],
+                                    [0,0,0,1],
+                                    [0,0,0,1],
+                                    [0,0,0,1],
+                                    [0,0,0,1]]
+        self.actor_dofs = [12,0]
+        self.num_actors = 2 + len(self.asset_paths)
+        
+        # kwargs["num_velocity_iterations"] = 1
         super(PushingRobot, self).__init__(*args,**kwargs)
 
         
@@ -24,6 +50,7 @@ class PushingRobot(LeggedRobot):
         """ Initialize torch tensors which will contain simulation states and processed quantities
         """
         # get gym GPU state tensors
+        self.object_states  = []
         actor_root_state = self.gym.acquire_actor_root_state_tensor(self.sim)
         dof_state_tensor = self.gym.acquire_dof_state_tensor(self.sim)
         net_contact_forces = self.gym.acquire_net_contact_force_tensor(self.sim)
@@ -34,8 +61,13 @@ class PushingRobot(LeggedRobot):
         # create some wrapper tensors for different slices
         self.all_root_states = gymtorch.wrap_tensor(actor_root_state)
         self.root_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,0,:]
-        self.cube_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,1,:]
-        self.dof_state = gymtorch.wrap_tensor(dof_state_tensor)#[:,0]
+        self.object_states_tensor = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,1:,:]
+        for i in range(self.num_actors-1):
+            self.object_states.append(self.object_states_tensor)
+
+        self.all_dof_states = gymtorch.wrap_tensor(dof_state_tensor)
+        self.dof_state = self.all_dof_states.view(self.num_envs, sum(self.actor_dofs),2)[:,:self.num_dof,:]
+        self.objects_dof_states = self.all_dof_states.view(self.num_envs, sum(self.actor_dofs),2)[:,self.num_dof:,:]
         self.dof_pos = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 0]
         self.dof_vel = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 1]
         self.base_quat = self.root_states[:, 3:7]
@@ -127,7 +159,7 @@ class PushingRobot(LeggedRobot):
         asset_root = "../IsaacGym_Preview_3_Package/isaacgym/assets/"
         asset_file = "urdf/cube_big.urdf"
         cube_asset_options = gymapi.AssetOptions()
-        # cube_asset_options.density = 0.01
+        cube_asset_options.density = 100.0
         
         cube_asset = self.gym.load_asset(self.sim, asset_root, asset_file, cube_asset_options)
         print("loaded 📦 asset")
@@ -135,7 +167,31 @@ class PushingRobot(LeggedRobot):
         cube_pose.r = gymapi.Quat(0, 0, 0, 1)
         # cube_pose.p = gymapi.Vec3(2, 0, 2)
 
-
+        #load assets
+        igibson_assets = []
+        igibson_asset_options = gymapi.AssetOptions()
+        # igibson_asset_options.default_dof_drive_mode = self.cfg.asset.default_dof_drive_mode
+        # igibson_asset_options.collapse_fixed_joints = self.cfg.asset.collapse_fixed_joints
+        # igibson_asset_options.replace_cylinder_with_capsule = self.cfg.asset.replace_cylinder_with_capsule
+        # igibson_asset_options.flip_visual_attachments = self.cfg.asset.flip_visual_attachments
+        igibson_asset_options.density = 10.0
+        # igibson_asset_options.convex_decomposition_from_submeshes = True
+        # igibson_asset_options.angular_damping = self.cfg.asset.angular_damping
+        # igibson_asset_options.linear_damping = self.cfg.asset.linear_damping
+        # igibson_asset_options.max_angular_velocity = self.cfg.asset.max_angular_velocity
+        # igibson_asset_options.max_linear_velocity = self.cfg.asset.max_linear_velocity
+        # igibson_asset_options.armature = self.cfg.asset.armature
+        # igibson_asset_options.thickness = self.cfg.asset.thickness
+        # igibson_asset_options.disable_gravity = False
+        igibson_asset_options.fix_base_link = True
+        igibson_asset_options.vhacd_enabled = True
+        # igibson_asset_options.vhacd_params.max_convex_hulls = 10
+        for asset_path in self.asset_paths:
+            folder, urdf_name = os.path.split(asset_path)
+            path = os.path.join(self.igibson_asset_root,folder)
+            igibson_assets.append(self.gym.load_asset(self.sim, path, urdf_name, igibson_asset_options))
+            print("loaded ", asset_path)
+            self.actor_dofs.append(self.gym.get_asset_joint_count(igibson_assets[-1]))
 
         base_init_state_list = self.cfg.init_state.pos + self.cfg.init_state.rot + self.cfg.init_state.lin_vel + self.cfg.init_state.ang_vel #+ [2,0,2]+ [0,0,0,1] + [0,0,0] + [0,0,0]
         self.base_init_state = to_torch(base_init_state_list, device=self.device, requires_grad=False)
@@ -146,26 +202,26 @@ class PushingRobot(LeggedRobot):
         self._get_env_origins()
         env_lower = gymapi.Vec3(0., 0., 0.)
         env_upper = gymapi.Vec3(0., 0., 0.)
-        cube_offset = gymapi.Vec3(0.38, 0.1, 0.2)
+        cube_init_state = [torch.tensor(self.cube_offset+[0.]*3+[1.]+[0]+[0.]*5, device=self.device)]
+        imported_asset_states = [torch.tensor(self.asset_offsets[i]+self.asset_orientations[i]+[0.]*6, device=self.device) for i in range(len(self.asset_paths))]
+        self.objects_init_states = torch.stack(cube_init_state + imported_asset_states, 0)
         
         self.actor_handles = []
         self.envs = []
-        self.cube_handles = []
+        self.object_handles = []
 
         for i in range(self.num_envs):
             # create env instance
             env_handle = self.gym.create_env(self.sim, env_lower, env_upper, int(np.sqrt(self.num_envs)))
             pos = self.env_origins[i].clone()
-            cube_pose.p = gymapi.Vec3(*pos) + cube_offset
+            cube_pose.p = gymapi.Vec3(*pos) + gymapi.Vec3(*self.cube_offset)
             # pos[:2] += torch_rand_float(-1., 1., (2,1), device=self.device).squeeze(1)
             pos[2] = 0.3
             start_pose.p = gymapi.Vec3(*pos)
             rigid_shape_props = self._process_rigid_shape_props(rigid_shape_props_asset, i)
             self.gym.set_asset_rigid_shape_properties(robot_asset, rigid_shape_props)
-            actor_handle = self.gym.create_actor(env_handle, robot_asset, start_pose, self.cfg.asset.name, i, self.cfg.asset.self_collisions, 0)
-            # self.gym.set_asset_rigid_shape_properties(cube_asset, rigid_shape_props)
-            
-            cube_handle = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube", i, 0)
+            actor_handle = self.gym.create_actor(env_handle, robot_asset, start_pose, self.cfg.asset.name+str(i), i, 0)
+            # self.gym.set_asset_rigid_shape_properties(cube_asset, rigid_shape_props)            
             # self.gym.set_actor_scale(env_handle, cube_handle, 4)
             dof_props = self._process_dof_props(dof_props_asset, i)
             self.gym.set_actor_dof_properties(env_handle, actor_handle, dof_props)
@@ -174,7 +230,21 @@ class PushingRobot(LeggedRobot):
             self.gym.set_actor_rigid_body_properties(env_handle, actor_handle, body_props, recomputeInertia=True)
             self.envs.append(env_handle)
             self.actor_handles.append(actor_handle)
-            self.cube_handles.append(cube_handle)
+            
+            cube_handle = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube"+str(i),i, 0)
+            self.object_handles.append(cube_handle)
+            for asset, location, orientation in zip(igibson_assets,self.asset_offsets, self.asset_orientations):
+                asset_start_pose = gymapi.Transform()
+                asset_start_pose.p = gymapi.Vec3(*location) + gymapi.Vec3(*pos)
+                asset_start_pose.r = gymapi.Quat(*orientation)
+                object_handle = self.gym.create_actor(env_handle, asset, asset_start_pose, "door"+str(i), i, 1)
+                self.object_handles.append(object_handle)
+                props = self.gym.get_actor_dof_properties(env_handle, object_handle)
+                props["driveMode"].fill(gymapi.DOF_MODE_NONE)
+                props["stiffness"].fill(0.0)
+                props["damping"].fill(0.0)
+                props["friction"].fill(0.5)
+                self.gym.set_actor_dof_properties(env_handle, object_handle, props)
 
         self.feet_indices = torch.zeros(len(feet_names), dtype=torch.long, device=self.device, requires_grad=False)
         for i in range(len(feet_names)):
@@ -206,17 +276,29 @@ class PushingRobot(LeggedRobot):
                 self.root_states[env_ids, :3] += self.env_origins[env_ids]
             # base velocities
             self.root_states[env_ids, 7:13] = torch_rand_float(-0.5, 0.5, (len(env_ids), 6), device=self.device) # [7:10]: lin vel, [10:13]: ang vel
-            env_ids_int32_robot = env_ids.to(dtype=torch.int32)*2
-            env_ids_int32_cube = env_ids.to(dtype=torch.int32)*2+1
-            env_ids_int32 = torch.flatten(torch.stack((env_ids.to(dtype=torch.int32)*2, env_ids.to(dtype=torch.int32)*2+1),1))
-            self.cube_states[env_ids] = torch.tensor([0.38, 0.1, 0.2]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)
-            self.cube_states[env_ids, :3] += self.env_origins[env_ids]
+            
+            # object states
+            # cube_init_state = gymtorch.wraptensor([0.38, 0.1, 0.2]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)
+            # self.cube_states[env_ids, :3] += self.env_origins[env_ids]
+            
+            self.object_states_tensor[env_ids,:,:] = self.objects_init_states
+            self.object_states_tensor[env_ids,:,:3] += self.env_origins[env_ids].unsqueeze(1)
+            # self.object_states_tensor[env_ids,:,3:7] = self.asset_orientations
+            
+            env_ids_int32_robot = env_ids.to(dtype=torch.int32)*self.num_actors
+            # object_offsets = torch.linspace(0, self.num_actors-1,self.num_actors).repeat(len(env_ids))
+            # actor_idxs = env_ids + object_offsets
+            
+            # env_ids_int32_cube = env_ids.to(dtype=torch.int32)*self.num_actors+1
+            actor_ids = torch.flatten(torch.linspace(0, self.num_actors*self.num_envs-1,self.num_envs*self.num_actors,device=self.device).reshape(self.num_envs,self.num_actors)[env_ids])
+            actor_ids_int32 = actor_ids.to(dtype=torch.int32)
+            # env_ids_int32 = torch.flatten(torch.stack((env_ids.to(dtype=torch.int32)*2, env_ids.to(dtype=torch.int32)*2+1),1))
             # cube_state = torch.stack([torch.tensor([0.,0.,0.]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)]*self.num_envs,0)
             # cube_state[:,:3] = self.root_states[:,:3]+torch.tensor([[1,0,0]],device=self.device) 
-            all_bodies_root_state = torch.reshape(torch.cat((self.root_states,self.cube_states),1), (-1,13))
+            # all_bodies_root_state = torch.reshape(torch.cat((self.root_states,self.cube_states),1), (-1,13))
             self.gym.set_actor_root_state_tensor_indexed(self.sim,
                                                         gymtorch.unwrap_tensor(self.all_root_states),
-                                                        gymtorch.unwrap_tensor(env_ids_int32), 2*len(env_ids_int32_robot))
+                                                        gymtorch.unwrap_tensor(actor_ids_int32), len(actor_ids_int32))
 
     def _reset_dofs(self, env_ids):
             """ Resets DOF position and velocities of selected environmments
@@ -226,14 +308,61 @@ class PushingRobot(LeggedRobot):
             Args:
                 env_ids (List[int]): Environemnt ids
             """
+            self.objects_dof_states[env_ids,:,1] = 0.0
+            self.objects_dof_states[env_ids,:,0] = 0.0
+             
+            # self.objects_dof_states *= 0.
             self.dof_pos[env_ids] = self.default_dof_pos * torch_rand_float(0.5, 1.5, (len(env_ids), self.num_dof), device=self.device)
             self.dof_vel[env_ids] = 0.
-
-            env_ids_int32 = env_ids.to(dtype=torch.int32)* self.num_actors
+            # actor_ids = torch.flatten(torch.linspace(0, 2*sum(self.actor_dofs)*self.num_envs-1,2*self.num_envs*sum(self.actor_dofs),device=self.device).reshape(self.num_envs,sum(self.actor_dofs),2)[env_ids])
+            actor_ids = torch.flatten(torch.linspace(0, self.num_actors*self.num_envs-1,self.num_envs*self.num_actors,device=self.device).reshape(self.num_envs,self.num_actors)[env_ids,::2])
+            env_ids_int32 = actor_ids.to(dtype=torch.int32)#* self.num_actors
+            # env_ids_int32 = env_ids.to(dtype=torch.int32)*self.num_actors
             self.gym.set_dof_state_tensor_indexed(self.sim,
-                                                gymtorch.unwrap_tensor(self.dof_state),
+                                                gymtorch.unwrap_tensor(self.all_dof_states),
                                                 gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
+    
+    def step(self, actions):
+        """ Apply actions, simulate, call self.post_physics_step()
 
+        Args:
+            actions (torch.Tensor): Tensor of shape (num_envs, num_actions_per_env)
+        """
+        clip_actions = self.cfg.normalization.clip_actions
+        self.actions = torch.clip(actions, -clip_actions, clip_actions).to(self.device)
+        # step physics and render each frame
+        self.render()
+        for _ in range(self.cfg.control.decimation):
+            self.torques = self._compute_torques(self.actions).view(self.torques.shape)
+            self.all_actor_torques = torch.nn.functional.pad(self.torques,(0,sum(self.actor_dofs)-12),"constant",1)
+            self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.all_actor_torques))
+            self.gym.simulate(self.sim)
+            if self.device == 'cpu':
+                self.gym.fetch_results(self.sim, True)
+            self.gym.refresh_dof_state_tensor(self.sim)
+        self.post_physics_step()
+
+        # return clipped obs, clipped states (None), rewards, dones and infos
+        clip_obs = self.cfg.normalization.clip_observations
+        self.obs_buf = torch.clip(self.obs_buf, -clip_obs, clip_obs)
+        if self.privileged_obs_buf is not None:
+            self.privileged_obs_buf = torch.clip(self.privileged_obs_buf, -clip_obs, clip_obs)
+        return self.obs_buf, self.privileged_obs_buf, self.rew_buf, self.reset_buf, self.extras
+
+    
+    def _push_robots(self):
+        """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity. 
+        """
+        max_vel = self.cfg.domain_rand.max_push_vel_xy
+        self.root_states[:, 7:9] = torch_rand_float(-max_vel, max_vel, (self.num_envs, 2), device=self.device) # lin vel x/y
+        self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.root_states.contiguous()))
+    
+    
+    def _reward_box_moved(self,):
+        # object_loc = self.object_states_tensor[:,0,:3]
+        displacement = (self.object_states_tensor[:,0,:3] - self.env_origins) - self.objects_init_states[0,:3]
+        return torch.norm(displacement, dim=1)
+        # return torch.zeros([self.num_envs],device=self.device)
     # def check_termination(self):
     #     """ Check if environments need to be reset
     #     """

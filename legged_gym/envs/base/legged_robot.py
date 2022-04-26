@@ -163,7 +163,6 @@ class LeggedRobot(BaseTask):
         
         # reset robot states
         self._reset_dofs(env_ids)
-        print(env_ids)
         self._reset_root_states(env_ids)
 
         self._resample_commands(env_ids)
@@ -475,6 +474,7 @@ class LeggedRobot(BaseTask):
         noise_vec[24:36] = noise_scales.dof_vel * noise_level * self.obs_scales.dof_vel
         noise_vec[36:48] = 0. # previous actions
         if self.cfg.terrain.measure_heights:
+            print("warning")
             noise_vec[48:235] = noise_scales.height_measurements* noise_level * self.obs_scales.height_measurements
         return noise_vec
 

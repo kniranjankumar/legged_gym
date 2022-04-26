@@ -87,9 +87,68 @@ class A1FlatCfg( A1RoughCfg):
         mesh_type = 'plane'
         measure_heights = False
     class env(A1RoughCfg.env ):
-        num_envs = 50
-        
+        # num_envs = 4096
+        num_observations = 48
+        spacing = 10.
     class viewer:
         ref_env = 0
         pos = [0, 10, 10]  # [m]
         lookat = [5., 5., 0.]  # [m]
+
+    class rewards:
+        class scales:
+            termination = -0.0
+            tracking_lin_vel = 1.0
+            tracking_ang_vel = 0.5
+            lin_vel_z = -2.0
+            ang_vel_xy = -0.05
+            orientation = -0.
+            torques = -0.00001
+            dof_vel = -0.
+            dof_acc = -2.5e-7
+            base_height = -0. 
+            feet_air_time =  1.0
+            collision = -1.
+            feet_stumble = -0.0 
+            action_rate = -0.01
+            stand_still = -0.
+            box_moved = 2.0
+
+        only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
+        tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
+        soft_dof_pos_limit = 1. # percentage of urdf limits, values above this limit are penalized
+        soft_dof_vel_limit = 1.
+        soft_torque_limit = 1.
+        base_height_target = 1.
+        max_contact_force = 100. # forces above this value are penalized
+
+    class noise:
+        add_noise = False
+        noise_level = 1.0 # scales other values
+        class noise_scales:
+            dof_pos = 0.01
+            dof_vel = 1.5
+            lin_vel = 0.1
+            ang_vel = 0.2
+            gravity = 0.05
+            height_measurements = 0.1
+
+    class sim:
+        dt =  0.005
+        substeps = 1
+        gravity = [0., 0. ,-9.81]  # [m/s^2]
+        up_axis = 1  # 0 is y, 1 is z
+
+        class physx:
+            num_threads = 10
+            solver_type = 1  # 0: pgs, 1: tgs
+            num_position_iterations = 4
+            num_velocity_iterations = 1
+            contact_offset = 0.01  # [m]
+            rest_offset = 0.0   # [m]
+            bounce_threshold_velocity = 0.5 #0.5 [m/s]
+            # max_depenetration_velocity = 100.0
+            max_gpu_contact_pairs = 2**23 #2**24 -> needed for 8000 envs and more
+            default_buffer_size_multiplier = 5
+            contact_collection = 2 # 0: never, 1: last sub-step, 2: all sub-steps (default=2)
+            # always_use_articulations = True
