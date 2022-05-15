@@ -82,44 +82,82 @@ class A1RoughCfgPPO( LeggedRobotCfgPPO ):
         run_name = ''
         experiment_name = 'rough_a1'
 
+
+class A1FlatCfgPPO( LeggedRobotCfgPPO ):
+    class algorithm( LeggedRobotCfgPPO.algorithm ):
+        entropy_coef = 0.01
+
+        
+    class runner( LeggedRobotCfgPPO.runner ):
+        run_name = ''
+        experiment_name = 'reachtarget'
+        policy_class_name = 'SkillActorCritic'     
+        
+    class policy:
+        init_noise_std = 1.0
+        actor_hidden_dims = [512, 256, 128]
+        critic_hidden_dims = [512, 256, 128]
+        activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
+        # only for 'ActorCriticRecurrent':
+        # rnn_type = 'lstm'
+        # rnn_hidden_size = 512
+        # rnn_num_layers = 1
+           
 class A1FlatCfg( A1RoughCfg):
     class terrain( A1RoughCfg.terrain ):
         mesh_type = 'plane'
         measure_heights = False
+        
+    class asset( A1RoughCfg.asset ):
+        terminate_after_contacts_on = ["base", "FL_hip", "FR_hip", "RL_hip", "RR_hip"]
+        self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
     class env(A1RoughCfg.env ):
-        # num_envs = 4096
+        num_envs = 4096
         num_observations = 48
-        spacing = 10.
+        env_spacing = 5.
     class viewer:
         ref_env = 0
         pos = [0, 10, 10]  # [m]
         lookat = [5., 5., 0.]  # [m]
 
+    class commands:
+        curriculum = False
+        max_curriculum = 1.
+        num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
+        resampling_time = 10. # time before command are changed[s]
+        heading_command = True # if true: compute ang vel command from heading error
+        class ranges:
+            lin_vel_x = [0.5, 0.5] # min max [m/s]
+            lin_vel_y = [-0.0, 0.0]   # min max [m/s]
+            ang_vel_yaw = [-0, 0]    # min max [rad/s]
+            heading = [-0, 0]
     class rewards:
         class scales:
             termination = -0.0
             tracking_lin_vel = 1.0
-            tracking_ang_vel = 0.5
+            tracking_ang_vel = 0.1
             lin_vel_z = -2.0
             ang_vel_xy = -0.05
             orientation = -0.
-            torques = -0.00001
             dof_vel = -0.
             dof_acc = -2.5e-7
-            base_height = -0. 
+            base_height = -0.1
             feet_air_time =  1.0
             collision = -1.
             feet_stumble = -0.0 
             action_rate = -0.01
             stand_still = -0.
-            box_moved = 2.0
+            torques = -0.0002
+            dof_pos_limits = -10.0
+            # door_angle = 0.6
+            # box_moved = 2.0
 
         only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
         soft_dof_pos_limit = 1. # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 1.
         soft_torque_limit = 1.
-        base_height_target = 1.
+        base_height_target = 0.25
         max_contact_force = 100. # forces above this value are penalized
 
     class noise:
@@ -147,8 +185,238 @@ class A1FlatCfg( A1RoughCfg):
             contact_offset = 0.01  # [m]
             rest_offset = 0.0   # [m]
             bounce_threshold_velocity = 0.5 #0.5 [m/s]
-            # max_depenetration_velocity = 100.0
+            max_depenetration_velocity = 100.0
             max_gpu_contact_pairs = 2**23 #2**24 -> needed for 8000 envs and more
             default_buffer_size_multiplier = 5
             contact_collection = 2 # 0: never, 1: last sub-step, 2: all sub-steps (default=2)
             # always_use_articulations = True
+            
+class A1MultiSkillCfgPPO( LeggedRobotCfgPPO ):
+    class algorithm( LeggedRobotCfgPPO.algorithm ):
+        entropy_coef = 0.01
+        residual_action_penalty_coef = 0.009
+
+    class policy:
+        init_noise_std = 1.0
+        actor_hidden_dims = [[512, 256, 128], [256, 128]]
+        critic_hidden_dims = [512, 256, 128]
+        activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
+        
+    class runner( LeggedRobotCfgPPO.runner ):
+        run_name = ''
+        algorithm_class_name = 'ResidualPPO'
+        checkpoint = "750" # -1 = last saved model
+        load_run = "May10_21-50-29_"
+        
+        obs_sizes = {"scaled_base_lin_vel": 3,
+                    "scaled_base_ang_vel": 3,
+                    "projected_gravity": 3,
+                    "door_state": 2,
+                    "door_angle": 1,
+                    # "target_position": 3,
+                    "relative_dof": 12,
+                    "scaled_dof_vel": 12,
+                    "actions": 12}
+        actor_obs =[["scaled_base_lin_vel",
+                    "scaled_base_ang_vel",
+                    "projected_gravity",
+                    "relative_dof",
+                    "scaled_dof_vel",
+                    "actions"],
+                    
+                    ["scaled_base_lin_vel",
+                    "scaled_base_ang_vel",
+                    "projected_gravity",
+                    "door_state",
+                    "door_angle",
+                    "relative_dof",
+                    "scaled_dof_vel",
+                    "actions"]
+                    ]
+        critic_obs = [                    
+                    ["scaled_base_lin_vel",
+                    "scaled_base_ang_vel",
+                    "projected_gravity",
+                    "door_state",
+                    "door_angle",
+                    "relative_dof",
+                    "scaled_dof_vel",
+                    "actions"]
+                      ]
+        experiment_name = 'multiskill'
+        policy_class_name = 'MultiSkillActorCritic'
+        skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/straight_walker/May06_14-52-51_/model_550.pt"]
+        
+class A1MultiSkillReachCfgPPO( LeggedRobotCfgPPO ):
+    class algorithm( LeggedRobotCfgPPO.algorithm ):
+        entropy_coef = 0.01
+        residual_action_penalty_coef = 0.05
+    class policy:
+        init_noise_std = 1.0
+        actor_hidden_dims = [[512, 256, 128], [512, 256, 128]]
+        critic_hidden_dims = [512, 256, 128]
+        activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
+        
+    class runner( LeggedRobotCfgPPO.runner ):
+        run_name = ''
+        algorithm_class_name = 'ResidualPPO'
+        # checkpoint = "750" # -1 = last saved model
+        load_run = "May12_19-48-31_"
+        max_iterations = 3500
+        obs_sizes = {"scaled_base_lin_vel": 3,
+                    "scaled_base_ang_vel": 3,
+                    "projected_gravity": 3,
+                    "target_position": 2,
+                    "relative_dof": 12,
+                    "scaled_dof_vel": 12,
+                    "actions": 12}
+        actor_obs =[["scaled_base_lin_vel",
+                    "scaled_base_ang_vel",
+                    "projected_gravity",
+                    "relative_dof",
+                    "scaled_dof_vel",
+                    "actions"],
+                    
+                    ["scaled_base_lin_vel",
+                    "scaled_base_ang_vel",
+                    "projected_gravity",
+                    "target_position",
+                    "relative_dof",
+                    "scaled_dof_vel",
+                    "actions"]
+                    ]
+        critic_obs = [                    
+                    ["scaled_base_lin_vel",
+                    "scaled_base_ang_vel",
+                    "projected_gravity",
+                    "target_position",
+                    "relative_dof",
+                    "scaled_dof_vel",
+                    "actions"]
+                      ]
+        experiment_name = 'multiskill_targetreach'
+        policy_class_name = 'MultiSkillActorCritic'
+        skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/straight_walker/May06_14-52-51_/model_550.pt"]
+        
+class A1TargetReachCfg( A1FlatCfg):
+    class env(A1RoughCfg.env ):
+        num_envs = 4096
+        num_observations = 47
+        env_spacing = 5.
+    class rewards:
+        class scales:
+            termination = -0.0
+            tracking_lin_vel = 0.5
+            tracking_ang_vel = 0.0
+            lin_vel_z = -2.0
+            ang_vel_xy = -0.00
+            orientation = -0.
+            dof_vel = -0.
+            dof_acc = -2.5e-7
+            base_height = -0.1
+            feet_air_time =  1.0
+            collision = -1.
+            feet_stumble = -0.0 
+            action_rate = -0.01
+            stand_still = -0.
+            torques = -0.0002
+            dof_pos_limits = -10.0
+            target_reach = 2.0
+            # door_angle = 0.6
+            # box_moved = 2.0
+
+        only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
+        tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
+        soft_dof_pos_limit = 1. # percentage of urdf limits, values above this limit are penalized
+        soft_dof_vel_limit = 1.
+        soft_torque_limit = 1.
+        base_height_target = 0.25
+        max_contact_force = 100. # forces above this value are penalized
+
+class A1MultiSkillObjectPushCfgPPO( LeggedRobotCfgPPO ):
+    class algorithm( LeggedRobotCfgPPO.algorithm ):
+        entropy_coef = 0.01
+        residual_action_penalty_coef = 0.02
+
+    class policy:
+        init_noise_std = 1.0
+        actor_hidden_dims = [[512, 256, 128], [512, 256, 128]]
+        critic_hidden_dims = [512, 256, 128]
+        activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
+        
+    class runner( LeggedRobotCfgPPO.runner ):
+        run_name = ''
+        algorithm_class_name = 'ResidualPPO'
+        max_iterations = 1500
+        obs_sizes = {"scaled_base_lin_vel": 3,
+                    "scaled_base_ang_vel": 3,
+                    "projected_gravity": 3,
+                    "target_position": 2,
+                    "object_position": 2,
+                    "relative_dof": 12,
+                    "scaled_dof_vel": 12,
+                    "actions": 12}
+        actor_obs =[["scaled_base_lin_vel",
+                    "scaled_base_ang_vel",
+                    "projected_gravity",
+                    "relative_dof",
+                    "scaled_dof_vel",
+                    "actions"],
+                    
+                    ["scaled_base_lin_vel",
+                    "scaled_base_ang_vel",
+                    "projected_gravity",
+                    "target_position",
+                    "object_position", 
+                    "relative_dof",
+                    "scaled_dof_vel",
+                    "actions"]
+                    ]
+        critic_obs = [                    
+                    ["scaled_base_lin_vel",
+                    "scaled_base_ang_vel",
+                    "projected_gravity",
+                    "target_position",
+                    "object_position",
+                    "relative_dof",
+                    "scaled_dof_vel",
+                    "actions"]
+                      ]
+        experiment_name = 'multiskill_object_push'
+        policy_class_name = 'MultiSkillActorCritic'
+        skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/straight_walker/May06_14-52-51_/model_550.pt"]
+        
+class A1TargetObjectPushCfg( A1FlatCfg):
+    class env(A1RoughCfg.env ):
+        num_envs = 4096
+        num_observations = 49
+        env_spacing = 5.
+    class rewards:
+        class scales:
+            termination = -0.0
+            tracking_lin_vel = 0.4 #0.5
+            tracking_ang_vel = 0.0
+            lin_vel_z = -2.0
+            ang_vel_xy = -0.00
+            orientation = -0.
+            dof_vel = -0.
+            dof_acc = -2.5e-7
+            base_height = -0.1
+            feet_air_time =  1.0
+            collision = -1.
+            feet_stumble = -0.0 
+            action_rate = -0.01
+            stand_still = -0.
+            torques = -0.0002
+            dof_pos_limits = -10.0
+            object_target_dist = 2.0
+            # door_angle = 0.6
+            # box_moved = 2.0
+
+        only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
+        tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
+        soft_dof_pos_limit = 1. # percentage of urdf limits, values above this limit are penalized
+        soft_dof_vel_limit = 1.
+        soft_torque_limit = 1.
+        base_height_target = 0.25
+        max_contact_force = 100. # forces above this value are penalized
