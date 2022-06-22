@@ -57,7 +57,7 @@ def play(args):
     obs = env.get_observations()
     # load policy
     train_cfg.runner.resume = True
-    ppo_runner, train_cfg = task_registry.make_multiskill_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg)
+    ppo_runner, train_cfg = task_registry.make_residual_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg)
     policy = ppo_runner.get_inference_policy(device=env.device)
     
     # export policy as a jit module (used to run it from C++)
@@ -83,7 +83,7 @@ def play(args):
     # plt.show(False)
     plt.draw()
     num_skills = len(train_cfg.runner.skill_paths)
-    chart = ax.bar(range(num_skills+1), [1.0]*(num_skills+1))
+    chart = ax.bar(range(num_skills), [1.0]*num_skills)
     weights_list = []
     for i in range(10*int(env.max_episode_length)):
         actions = policy(obs.detach())
@@ -100,7 +100,7 @@ def play(args):
         obs, _, rews, dones, infos = env.step(actions.detach())
         if dones[0] == True:
             ax1.clear()
-            num_pts2plot = min(len(weights_list)-1, 500)
+            num_pts2plot = min(len(weights_list)-1, 1000)
             ax1.plot(weights_list[:num_pts2plot])        
             weights_list = []
             # print("Should be plotting now")    

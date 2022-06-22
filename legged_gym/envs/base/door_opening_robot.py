@@ -37,7 +37,7 @@ class DoorOpeningRobot(LeggedRobot):
                                     [0,0,0,1]]
         self.actor_dofs = [12]
         self.num_actors = 1 + len(self.asset_paths)
-        
+        self.agent_relative_door_pos = None
         # kwargs["num_velocity_iterations"] = 1
         super(DoorOpeningRobot, self).__init__(*args,**kwargs)
 
@@ -375,9 +375,9 @@ class DoorOpeningRobot(LeggedRobot):
         self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3
-                                    torch.clamp((self.root_states[:,:2]-self.object_states_tensor[:,0,:2]).view(-1,2),-1,1),
-                                    torch.abs(self.objects_dof_states[:,0,0]).view(-1,1),                             #1  
-                                    # self.commands[:, :3] * self.commands_scale,                         #3
+                                    self.agent_relative_door_pos[:,:2], 
+                                    torch.abs(self.objects_dof_states[:,0,0]).view(-1,1),               #1  
+                                    # self.commands[:, :3] * self.commands_scale,                       #3
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
                                     self.actions                                                        #12
@@ -398,34 +398,21 @@ class DoorOpeningRobot(LeggedRobot):
         self.root_states[:, 7:9] = torch_rand_float(-max_vel, max_vel, (self.num_envs, 2), device=self.device) # lin vel x/y
         self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.root_states.contiguous()))
     
+
+    def post_physics_step(self):
+        self.agent_relative_door_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
+                                                               [self.object_states_tensor[:,0,3:7], self.object_states_tensor[:,0,:3]])
+        super(DoorOpeningRobot, self).post_physics_step()
     
-    def _resample_commands(self, env_ids):
-        """ Randommly select commands of some environments
+    def get_relative_translation(self, transform1, transform2):
+        """_summary_
 
         Args:
-            env_ids (List[int]): Environments ids for which new commands are needed
+            transform1 (List): Containing orientation first and translation second
+            transform2 (List): Containing orientation first and translation second
         """
-        self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
-        self.commands[env_ids, 1] = torch_rand_float(self.command_ranges["lin_vel_y"][0], self.command_ranges["lin_vel_y"][1], (len(env_ids), 1), device=self.device).squeeze(1)
-        if self.cfg.commands.heading_command:
-            self.commands[env_ids, 3] = torch_rand_float(self.command_ranges["heading"][0], self.command_ranges["heading"][1], (len(env_ids), 1), device=self.device).squeeze(1)
-        else:
-            self.commands[env_ids, 2] = torch_rand_float(self.command_ranges["ang_vel_yaw"][0], self.command_ranges["ang_vel_yaw"][1], (len(env_ids), 1), device=self.device).squeeze(1)
-
-        # set small commands to zero
-        self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.2).unsqueeze(1)    
-    
-    def _reward_box_moved(self,):
-        # object_loc = self.object_states_tensor[:,0,:3]
-        displacement = (self.object_states_tensor[:,0,:3] - self.env_origins) - self.objects_init_states[0,:3]
-        return torch.norm(displacement, dim=1)
-        # return torch.zeros([self.num_envs],device=self.device)
-    # def check_termination(self):
-    #     """ Check if environments need to be reset
-    #     """
-    #     self.reset_buf = torch.any(torch.norm(self.contact_forces[:, self.termination_contact_indices, :], dim=-1) > 1., dim=1)
-    #     self.time_out_buf = self.episode_length_buf > self.max_episode_length # no terminal reward for time-outs
-    #     self.reset_buf |= self.time_out_buf
+        q,t = tf_inverse(transform1[0], transform1[1])
+        return tf_apply(q,t,transform2[1])
     
     def _reward_door_angle(self,):
         # past_door_bool = ((self.root_states[:,:2]-self.object_states_tensor[:,0,:2]).view(-1,2) > 0.8).type(self.objects_dof_states.type)

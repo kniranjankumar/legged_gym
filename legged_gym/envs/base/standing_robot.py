@@ -10,16 +10,16 @@ from legged_gym.envs.a1.a1_config import A1FlatCfg, A1RoughCfgPPO
 import numpy as np
 import torch
             
-class TargetReachingRobot(LeggedRobot):
+class StandingRobot(LeggedRobot):
     def __init__(self,*args,**kwargs):
         self.num_actors = 2
         self.relative_cube_pos = None
-        super(TargetReachingRobot, self).__init__(*args,**kwargs)
+        super(StandingRobot, self).__init__(*args,**kwargs)
 
         
     def get_privileged_obs(self):
         ## return box location
-        return super(TargetReachingRobot, self).get_privileged_obs()
+        return super(StandingRobot, self).get_privileged_obs()
     
     def _init_buffers(self):
         """ Initialize torch tensors which will contain simulation states and processed quantities
@@ -126,7 +126,7 @@ class TargetReachingRobot(LeggedRobot):
             termination_contact_names.extend([s for s in body_names if name in s])
 
         asset_root = "../../IsaacGym_Preview_3_Package/isaacgym/assets/"
-        asset_file = "urdf/cube_big.urdf"
+        asset_file = "urdf/cube.urdf"
         cube_asset_options = gymapi.AssetOptions()
         # cube_asset_options.density = 0.01
         
@@ -166,7 +166,7 @@ class TargetReachingRobot(LeggedRobot):
             actor_handle = self.gym.create_actor(env_handle, robot_asset, start_pose, self.cfg.asset.name, i, self.cfg.asset.self_collisions, 0)
             # self.gym.set_asset_rigid_shape_properties(cube_asset, rigid_shape_props)
             
-            cube_handle = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube", self.num_envs+1, 0)
+            cube_handle = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube", i, 0)
             # self.gym.set_actor_scale(env_handle, cube_handle, 4)
             dof_props = self._process_dof_props(dof_props_asset, i)
             self.gym.set_actor_dof_properties(env_handle, actor_handle, dof_props)
@@ -225,8 +225,7 @@ class TargetReachingRobot(LeggedRobot):
                                                         gymtorch.unwrap_tensor(env_ids_int32), 2*len(env_ids_int32_robot))
 
     def generate_target_location(self, num_candidates):
-        radius = torch.rand(num_candidates, device=self.device)*3.
-        # radius = 3.
+        radius = 3.
         random_angle = torch.rand(num_candidates, device=self.device)*np.pi #- np.pi/2
         x = radius * torch.sin(random_angle)
         y = radius * torch.cos(random_angle)
@@ -256,8 +255,8 @@ class TargetReachingRobot(LeggedRobot):
         self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3
-                                    # torch.zeros_like(relative_cube_pos),                                #3
-                                    self.relative_cube_pos[:,:2],                                                  #3
+                                    # torch.zeros_like(relative_cube_pos),                              #3
+                                    self.relative_cube_pos[:,:2],                                       #3
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
                                     self.actions                                                        #12
@@ -280,7 +279,7 @@ class TargetReachingRobot(LeggedRobot):
         self.relative_cube_pos = tf_apply(q,t,cube_pos)
         # print(cube_pos[0], self.relative_cube_pos[0], t[0])
         super(TargetReachingRobot, self).post_physics_step()
-        
+
     # def check_termination(self):
     #     """ Check if environments need to be reset
     #     """
