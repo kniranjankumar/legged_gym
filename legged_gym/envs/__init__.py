@@ -40,6 +40,7 @@ from .base.standing_robot import StandingRobot
 from .base.turning_robot import TurningRobot
 from .base.visual_explorer import VisualRobot
 from .base.crouching_robot import CrouchingRobot
+from .base.interactive_target_reach import  InteractiveRobot
 from .anymal_c.anymal import Anymal
 from .anymal_c.mixed_terrains.anymal_c_rough_config import AnymalCRoughCfg, AnymalCRoughCfgPPO
 from .anymal_c.flat.anymal_c_flat_config import AnymalCFlatCfg, AnymalCFlatCfgPPO
@@ -68,3 +69,5 @@ task_registry.register( "pushobject", PushingRobot, A1TargetObjectPushCfg(), A1M
 task_registry.register( "standing", StandingRobot, A1StandingCfg(), A1StandingCfgPPO())
 task_registry.register( "visualrobot", VisualRobot, A1DoorOpeningv2Cfg(), A1DoorOpeningv2CfgPPO())
 task_registry.register( "crouching", CrouchingRobot, A1CrouchingCfg(), A1CrouchingCfgPPO())
+
+task_registry.register("interactive_targetreach", InteractiveRobot, InteractiveTargetReachCfg(), InteractiveTargetReachCfgPPO())

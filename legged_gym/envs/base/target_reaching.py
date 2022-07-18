@@ -227,7 +227,7 @@ class TargetReachingRobot(LeggedRobot):
     def generate_target_location(self, num_candidates):
         radius = torch.rand(num_candidates, device=self.device)*3.
         # radius = 3.
-        random_angle = torch.rand(num_candidates, device=self.device)*np.pi #- np.pi/2
+        random_angle = torch.rand(num_candidates, device=self.device)*2*np.pi #- np.pi/2
         x = radius * torch.sin(random_angle)
         y = radius * torch.cos(random_angle)
         return x, y
@@ -295,10 +295,22 @@ class TargetReachingRobot(LeggedRobot):
         max_vel = self.cfg.domain_rand.max_push_vel_xy
         self.root_states[:, 7:9] = torch_rand_float(-max_vel, max_vel, (self.num_envs, 2), device=self.device) # lin vel x/y
         self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.root_states.contiguous()))
-    
+        print("pushing")
+        
     def _reward_target_reach(self,):
         target_distance = torch.clip(torch.norm(self.relative_cube_pos[:,:2], dim=1), 0)
         rew = torch.exp(-target_distance)
         # print(rew[0])
         return rew
     
+    def reset_idx(self, env_ids):
+        
+        
+        if len(env_ids) != 0:
+            success = None
+            if self.relative_cube_pos != None:
+                success = (torch.clip(torch.norm(self.relative_cube_pos[:,:2], dim=1), 0)<0.3).type(torch.float32)
+                print(success)
+        super().reset_idx(env_ids)
+        if len(env_ids) != 0 and success != None:
+            self.extras["episode"]["success"] = success

@@ -256,7 +256,7 @@ class StandingRobot(LeggedRobot):
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3
                                     # torch.zeros_like(relative_cube_pos),                              #3
-                                    self.relative_cube_pos[:,:2],                                       #3
+                                    # self.relative_cube_pos[:,:2],                                       #3
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
                                     self.actions                                                        #12
@@ -278,7 +278,7 @@ class StandingRobot(LeggedRobot):
         q,t = tf_inverse(agent_orientation, agent_pos)
         self.relative_cube_pos = tf_apply(q,t,cube_pos)
         # print(cube_pos[0], self.relative_cube_pos[0], t[0])
-        super(TargetReachingRobot, self).post_physics_step()
+        super(StandingRobot, self).post_physics_step()
 
     # def check_termination(self):
     #     """ Check if environments need to be reset
@@ -295,9 +295,9 @@ class StandingRobot(LeggedRobot):
         self.root_states[:, 7:9] = torch_rand_float(-max_vel, max_vel, (self.num_envs, 2), device=self.device) # lin vel x/y
         self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.root_states.contiguous()))
     
-    def _reward_target_reach(self,):
-        target_distance = torch.clip(torch.norm(self.relative_cube_pos[:,:2], dim=1), 0)
-        rew = torch.exp(-target_distance)
-        # print(rew[0])
-        return rew
+    # def _reward_target_reach(self,):
+    #     target_distance = torch.clip(torch.norm(self.relative_cube_pos[:,:2], dim=1), 0)
+    #     rew = torch.exp(-target_distance)
+    #     # print(rew[0])
+    #     return rew
     

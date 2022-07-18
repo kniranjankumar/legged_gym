@@ -1,0 +1,180 @@
+<?xml version="1.0" ?>
+<robot name="8903" version="1.0">
+  <link name="base_link">
+    <visual name="link_0___1">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <mesh filename="shape/visual/link_0_m1_vm.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <mesh filename="shape/collision/link_0_cm.obj"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="door_left_wall">
+    <visual name="left_wall_0___1">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="2.5 0.1 0.5"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="2.5 0.1 0.5"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="left_wall">
+    <visual name="left_wall_1___1">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="12.0 0.1 0.5"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="12.0 0.1 0.5"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_wall">
+    <visual name="right_wall_1___1">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="12.0 0.1 0.5"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="12.0 0.1 0.5"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="back_wall">
+    <visual name="back_wall_1___1">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="6.0 0.1 0.5"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="6.0 0.1 0.5"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="back_wall_2">
+    <visual name="back_wall_1___1">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="6.0 0.1 0.5"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="6.0 0.1 0.5"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="door_right_wall">
+    <visual name="right_wall_0___1">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="2.5 0.1 0.5"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
+      <geometry>
+        <box size="2.5 0.1 0.5"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="link_1">
+    <visual name="link_1___2">
+      <origin rpy="0.0 0.0 0.0" xyz="0.2718480576000603 0.07412800192832969 -0.14707143841511927"/>
+      <geometry>
+        <mesh filename="shape/visual/link_1_m2_vm.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="0.2718480576000603 0.07412800192832969 -0.14707143841511927"/>
+      <geometry>
+        <mesh filename="shape/collision/link_1_cm.obj"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="link_2">
+    <visual name="link_2___1">
+      <origin rpy="0.0 0.0 0.0" xyz="-0.37034833274488377 0.0017434567958520795 -0.8958240151405333"/>
+      <geometry>
+        <mesh filename="shape/visual/link_2_m1_vm.obj"/>
+      </geometry>
+    </visual>
+    <visual name="link_2___2">
+      <origin rpy="0.0 0.0 0.0" xyz="-0.37034833274488377 0.0017434567958520795 -0.8958240151405333"/>
+      <geometry>
+        <mesh filename="shape/visual/link_2_m2_vm.obj"/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="-0.37034833274488377 0.0017434567958520795 -0.8958240151405333"/>
+      <geometry>
+        <mesh filename="shape/collision/link_2_cm.obj"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint_1" type="revolute">
+    <origin rpy="0.0 0.0 0.0" xyz="-0.6421963903449441 -0.0723845451324776 -0.7487525767254141"/>
+    <axis xyz="0.0 -1.0 0.0"/>
+    <parent link="link_2"/>
+    <child link="link_1"/>
+    <limit lower="0.0" upper="1.5707963267948966"/>
+  </joint>
+  <joint name="joint_2" type="revolute">
+    <origin rpy="0.0 0.0 0.0" xyz="0.37034833274488377 -0.0017434567958520795 0.8958240151405333"/>
+    <axis xyz="0.0 -0.0 0.9999999999999999"/>
+    <parent link="base_link"/>
+    <child link="link_2"/>
+    <limit lower="0.0" upper="1.5707963267948966"/>
+  </joint>
+  <joint name="joint_3" type="fixed">
+    <origin rpy="0.0 0.0 0.0" xyz="1.65 0.0 -0.65"/>
+    <parent link="base_link"/>
+    <child link="door_left_wall"/>
+  </joint>
+  <joint name="joint_4" type="fixed">
+    <origin rpy="0.0 0.0 1.57079632679" xyz="2.95 0 -0.65"/>
+    <parent link="base_link"/>
+    <child link="left_wall"/>
+  </joint>
+  <joint name="joint_5" type="fixed">
+    <origin rpy="0.0 0.0 1.57079632679" xyz="-2.95 0 -0.65"/>
+    <parent link="base_link"/>
+    <child link="right_wall"/>
+  </joint>
+  <joint name="joint_6" type="fixed">
+    <origin rpy="0.0 0.0 0" xyz="-0.0 6.0 -0.65"/>
+    <parent link="base_link"/>
+    <child link="back_wall"/>
+  </joint>
+  <joint name="joint_7" type="fixed">
+    <origin rpy="0.0 0.0 0.0" xyz="-1.65 0.0 -0.65"/>
+    <parent link="base_link"/>
+    <child link="door_right_wall"/>
+  </joint>
+  <joint name="joint_8" type="fixed">
+    <origin rpy="0.0 0.0 0" xyz="-0.0 -6.0 -0.65"/>
+    <parent link="base_link"/>
+    <child link="back_wall_2"/>
+  </joint>
+</robot>

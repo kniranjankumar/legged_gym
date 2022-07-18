@@ -573,6 +573,5 @@
       <mass value="0.06"/>
       <inertia ixx="9.6e-06" ixy="0.0" ixz="0.0" iyy="9.6e-06" iyz="0.0" izz="9.6e-06"/>
     </inertial>
-  </link>
 </robot>
 

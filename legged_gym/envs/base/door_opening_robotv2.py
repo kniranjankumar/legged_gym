@@ -334,7 +334,7 @@ class DoorOpeningRobotv2(LeggedRobot):
         self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3
-                                    self.agent_relative_door_pos[:,:2],                                 #2
+                                    # self.agent_relative_door_pos[:,:2],                                 #2
                                     self.agent_relative_door_pos[:,:2],                                 #2
                                     torch.abs(self.objects_dof_states[:,0,0]).view(-1,1),               #1  
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
@@ -346,7 +346,9 @@ class DoorOpeningRobotv2(LeggedRobot):
         if self.add_noise:
             self.obs_buf += (2 * torch.rand_like(self.obs_buf) - 1) * self.noise_scale_vec
 
-    
+    def get_robot_position(self):
+        return self.root_states[:,:2]-self.env_origins[:,:-1]
+        
     def _push_robots(self):
         """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity. 
         """
@@ -381,9 +383,10 @@ class DoorOpeningRobotv2(LeggedRobot):
         
         
         if len(env_ids) != 0:
-            success = (self.root_states[env_ids, 0]>(self.env_origins[env_ids,0]+4)).type(torch.float32)
+            success = (self.root_states[env_ids, 0]>(self.env_origins[env_ids,0]+3)).type(torch.float32)
             # print(success)
         super().reset_idx(env_ids)
         if len(env_ids) != 0:
             self.extras["episode"]["success"] = success
+            # print(success)
         

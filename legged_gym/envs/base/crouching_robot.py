@@ -265,6 +265,7 @@ class CrouchingRobot(LeggedRobot):
         """
         # relative_cube_pos[:,3] = 0
         # print(self.relative_cube_pos[0])
+        # print(self.agent_relative_cube_pos[0,:2])
         self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3

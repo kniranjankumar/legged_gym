@@ -25,14 +25,29 @@ class StraightWalkingRobot(LeggedRobot):
         """Compute observations by using the skill' observation_types
         """
         
-        self.scaled_base_lin_vel = self.base_lin_vel * self.obs_scales.lin_vel
-        self.scaled_base_ang_vel = self.base_ang_vel  * self.obs_scales.ang_vel
+        self.scaled_base_lin_vel = self.base_lin_vel * self.obs_scales.lin_vel*0
+        # self.scaled_base_lin_vel[:,0] = 1.0
+        self.scaled_base_ang_vel = self.base_ang_vel  * self.obs_scales.ang_vel*0
         self.relative_dof = (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos
-        self.scaled_dof_vel = self.dof_vel * self.obs_scales.dof_vel
+        self.scaled_dof_vel = self.dof_vel * self.obs_scales.dof_vel*0
         obs_list = [self.__getattribute__(obs_name) for obs_name in self.observation_types]
         self.obs_buf = torch.cat(obs_list, dim=-1)
+        # print(self.projected_gravity[0,:])
         if self.add_noise:
             self.obs_buf += (2 * torch.rand_like(self.obs_buf) - 1) * self.noise_scale_vec
+        # print(self.scaled_dof_vel[0,:])
+        # print(self.p_gains, self.d_gains)
+        
+    def reset_idx(self, env_ids):
+        super().reset_idx(env_ids)
+        robot_angle = torch.tensor([[ 0.0348995, 0, 0, 0.9993908 ]], device=self.device)
+        g_vec = to_torch(get_axis_params(-1., self.up_axis_idx), device=self.device).view(1,-1)
+        # print(robot_angle,g_vec)
+        # print(quat_rotate_inverse(robot_angle, g_vec ))
+        # if 1 in env_ids:
+        #     self.p_gains = torch.rand_like(self.p_gains)*20+20
+        #     self.d_gains = torch.rand_like(self.d_gains)*0.3+0.4
+            
             
             
     

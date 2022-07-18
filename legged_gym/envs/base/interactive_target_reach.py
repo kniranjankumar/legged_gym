@@ -13,7 +13,8 @@ import torch
 class InteractiveRobot(LeggedRobot):
     def __init__(self,*args,**kwargs):
         self.igibson_asset_root = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/resources/"
-        self.asset_paths = ["scenes/8903/8903_walls.urdf",
+        self.asset_paths = ["scenes/8903/two_room_house.urdf",
+                            "objects/lack_table/lack.urdf",
                             # "trash_can/11259/11259.urdf",
                             # "trash_can/102254/102254.urdf",
                             # "office_chair/179/179.urdf",
@@ -21,13 +22,13 @@ class InteractiveRobot(LeggedRobot):
                             # "office_chair/2490/2490.urdf"
                             ]
         self.asset_offsets = [[2.0,0.0,0.93],
-                              [2,2,1],
+                              [0,0,0],
                               [-2,2,1],
                               [4,4,2],
                               [4,-4,2],
                               [-4,4,2]
                               ]
-        self.cube_offset = [-4.47, -0.13, 0.5]
+        self.cube_offset = [-1., -0.13, 0.5]
         
         self.asset_orientations = [[ 0, 0, 0.7071068, 0.7071068 ],
                                     [0,0,0,1],
@@ -36,7 +37,7 @@ class InteractiveRobot(LeggedRobot):
                                     [0,0,0,1],
                                     [0,0,0,1]]
         self.actor_dofs = [12]
-        self.num_actors = 1 + len(self.asset_paths)
+        self.num_actors = 1 + 1 + len(self.asset_paths)
         
         # kwargs["num_velocity_iterations"] = 1
         super(InteractiveRobot, self).__init__(*args,**kwargs)
@@ -62,6 +63,7 @@ class InteractiveRobot(LeggedRobot):
         self.all_root_states = gymtorch.wrap_tensor(actor_root_state)
         self.root_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,0,:]
         self.object_states_tensor = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,1:,:]
+        self.target_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,-1,:]
         for i in range(self.num_actors-1):
             self.object_states.append(self.object_states_tensor)
 
@@ -157,6 +159,13 @@ class InteractiveRobot(LeggedRobot):
             termination_contact_names.extend([s for s in body_names if name in s])
 
         #load assets
+        target_asset = "urdf/cube_big.urdf"    
+        cube_asset_options = gymapi.AssetOptions()
+        cube_asset_options.fix_base_link = True
+        
+        cube_asset = self.gym.load_asset(self.sim, "../../IsaacGym_Preview_3_Package/isaacgym/assets/", target_asset, cube_asset_options)
+        
+        
         igibson_assets = []
         igibson_asset_options = gymapi.AssetOptions()
         igibson_asset_options.density = 10.0
@@ -175,14 +184,18 @@ class InteractiveRobot(LeggedRobot):
         base_init_state_list = self.cfg.init_state.pos + self.cfg.init_state.rot + self.cfg.init_state.lin_vel + self.cfg.init_state.ang_vel #+ [2,0,2]+ [0,0,0,1] + [0,0,0] + [0,0,0]
         self.base_init_state = to_torch(base_init_state_list, device=self.device, requires_grad=False)
         start_pose = gymapi.Transform()
+        cube_pose = gymapi.Transform()
+        cube_pose.r = gymapi.Quat(0, 0, 0, 1)
         # start_pose.p = gymapi.Vec3(*self.base_init_state[:3])
         
 
         self._get_env_origins()
         env_lower = gymapi.Vec3(0., 0., 0.)
         env_upper = gymapi.Vec3(0., 0., 0.)
+
         cube_init_state = [torch.tensor(self.cube_offset+[0.]*3+[1.]+[0]+[0.]*5, device=self.device)]
         imported_asset_states = [torch.tensor(self.asset_offsets[i]+self.asset_orientations[i]+[0.]*6, device=self.device) for i in range(len(self.asset_paths))]
+        imported_asset_states += cube_init_state
         self.objects_init_states = torch.stack(imported_asset_states, 0)
         
         self.actor_handles = []
@@ -195,7 +208,7 @@ class InteractiveRobot(LeggedRobot):
             pos = self.env_origins[i].clone()
             pos[0] += torch_rand_float(-1., 1., (1,1) ,device=self.device).squeeze(1)[0]
             
-            # cube_pose.p = gymapi.Vec3(*pos) + gymapi.Vec3(*self.cube_offset)
+            cube_pose.p = gymapi.Vec3(*pos) + gymapi.Vec3(*self.cube_offset)
             # pos[:2] += torch_rand_float(-1., 1., (2,1), device=self.device).squeeze(1)
             # pos[2] = 0.3
             start_pose.p = gymapi.Vec3(*pos) + gymapi.Vec3(*self.base_init_state[:3])
@@ -212,7 +225,6 @@ class InteractiveRobot(LeggedRobot):
             self.envs.append(env_handle)
             self.actor_handles.append(actor_handle)
             
-            # cube_handle = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube"+str(i),i, 0)
             # self.object_handles.append(cube_handle)
             for asset, location, orientation in zip(igibson_assets,self.asset_offsets, self.asset_orientations):
                 asset_start_pose = gymapi.Transform()
@@ -226,6 +238,9 @@ class InteractiveRobot(LeggedRobot):
                 props["damping"].fill(0.0)
                 props["friction"].fill(0.5)
                 self.gym.set_actor_dof_properties(env_handle, object_handle, props)
+            cube_handle = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube",self.num_envs+1, 0)
+            self.gym.set_rigid_body_color(env_handle, cube_handle, 0, gymapi.MESH_VISUAL, gymapi.Vec3(1,0,0))
+                  
         self.actors_with_dofs = [i for i, dof in enumerate(self.actor_dofs) if dof>0]
         self.feet_indices = torch.zeros(len(feet_names), dtype=torch.long, device=self.device, requires_grad=False)
         for i in range(len(feet_names)):
@@ -266,7 +281,11 @@ class InteractiveRobot(LeggedRobot):
             self.root_states[env_ids, 7:13] = torch_rand_float(-0.5, 0.5, (len(env_ids), 6), device=self.device) # [7:10]: lin vel, [10:13]: ang vel
             self.object_states_tensor[env_ids,:,:] = self.objects_init_states
             self.object_states_tensor[env_ids,:,:3] += self.env_origins[env_ids].unsqueeze(1)
-
+            self.target_states[env_ids] = torch.tensor([0.38, 0.1, 0.2]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)
+            x, y = self.generate_target_location(len(env_ids))
+            self.target_states[env_ids,0] = x
+            self.target_states[env_ids,1] = y
+            self.target_states[env_ids, :3] += self.env_origins[env_ids]
 
             actor_ids = torch.flatten(torch.linspace(0, self.num_actors*self.num_envs-1,self.num_envs*self.num_actors,device=self.device).reshape(self.num_envs,self.num_actors)[env_ids])
             actor_ids_int32 = actor_ids.to(dtype=torch.int32)
@@ -335,7 +354,8 @@ class InteractiveRobot(LeggedRobot):
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3
                                     self.agent_relative_door_pos[:,:2],                                 #2
-                                    self.agent_relative_door_pos[:,:2],                                 #2
+                                    # self.agent_relative_door_pos[:,:2],                                 #2
+                                    self.agent_relative_target_pos[:,:2],                               #2
                                     torch.abs(self.objects_dof_states[:,0,0]).view(-1,1),               #1  
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
@@ -346,6 +366,24 @@ class InteractiveRobot(LeggedRobot):
         if self.add_noise:
             self.obs_buf += (2 * torch.rand_like(self.obs_buf) - 1) * self.noise_scale_vec
 
+    def generate_target_location(self, num_candidates):
+        radius = torch.rand(num_candidates, device=self.device)*3.
+        # radius = 3.
+        random_angle = torch.rand(num_candidates, device=self.device)*np.pi #- np.pi/2
+        x = radius * torch.sin(random_angle)
+        y = radius * torch.cos(random_angle)
+        return x, y
+        
+    
+    def get_relative_translation(self, transform1, transform2):
+        """_summary_
+
+        Args:
+            transform1 (List): Containing orientation first and translation second
+            transform2 (List): Containing orientation first and translation second
+        """
+        q,t = tf_inverse(transform1[0], transform1[1])
+        return tf_apply(q,t,transform2[1])
     
     def _push_robots(self):
         """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity. 
@@ -357,6 +395,8 @@ class InteractiveRobot(LeggedRobot):
     def post_physics_step(self):
         self.agent_relative_door_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
                                                                [self.object_states_tensor[:,0,3:7], self.object_states_tensor[:,0,:3]])
+        self.agent_relative_target_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
+                                                               [self.target_states[:,3:7], self.target_states[:,:3]])
         super(InteractiveRobot, self).post_physics_step()
     
     def get_relative_translation(self, transform1, transform2):
@@ -369,21 +409,24 @@ class InteractiveRobot(LeggedRobot):
         q,t = tf_inverse(transform1[0], transform1[1])
         return tf_apply(q,t,transform2[1])
 
-    def _reward_door_angle(self,):
-        # past_door_bool = ((self.root_states[:,:2]-self.object_states_tensor[:,0,:2]).view(-1,2) > 0.8).type(self.objects_dof_states.type)
-        return torch.abs(self.objects_dof_states[:,0,0])
-    
-    def _reward_cross_door(self,):
-        crossed_bool = self.root_states[:, 0]>(self.env_origins[:,0]+4)
-        return crossed_bool.type(torch.float64)
-    
-    def reset_idx(self, env_ids):
-        
-        
+    def reset_idx(self, env_ids):        
         if len(env_ids) != 0:
             success = (self.root_states[env_ids, 0]>(self.env_origins[env_ids,0]+4)).type(torch.float32)
             # print(success)
         super().reset_idx(env_ids)
         if len(env_ids) != 0:
             self.extras["episode"]["success"] = success
-        
+
+    def _reward_door_angle(self,):
+        # past_door_bool = ((self.root_states[:,:2]-self.object_states_tensor[:,0,:2]).view(-1,2) > 0.8).type(self.objects_dof_states.type)
+        return torch.abs(self.objects_dof_states[:,0,0])
+    
+    def _reward_cross_door(self,):
+        crossed_bool = self.root_states[:, 0]>(self.env_origins[:,0]+4)
+        return crossed_bool.type(torch.float64)     
+    
+    def _reward_robot_target_dist(self,):
+        target_distance = torch.clip(torch.norm( self.agent_relative_target_pos[:,:2], dim=1), 0)
+        rew = torch.exp(-target_distance)
+        # print(rew[0])
+        return rew   
