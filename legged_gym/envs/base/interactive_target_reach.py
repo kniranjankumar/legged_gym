@@ -273,9 +273,12 @@ class InteractiveRobot(LeggedRobot):
             else:
                 self.root_states[env_ids] = self.base_init_state
                 self.root_states[env_ids, :3] += self.env_origins[env_ids]
-                self.root_states[env_ids,0] += torch_rand_float(-2., 2., (len(env_ids),1), device=self.device)[:,0] #randomize distance from door
+                robot_x, robot_y = self.generate_target_location(len(env_ids))
+                # self.root_states[env_ids,0] += robot_x
+                # self.root_states[env_ids,1] += robot_y
+                self.root_states[env_ids,0] += torch_rand_float(-3., 1., (len(env_ids),1), device=self.device)[:,0] #randomize distance from door
                 self.root_states[env_ids,1] += torch_rand_float(-2., 2., (len(env_ids),1), device=self.device)[:,0] #randomize distance from door
-                orientation_z = torch_rand_float(-np.pi/2, np.pi/2, (len(env_ids),1), device=self.device)[:,0]
+                orientation_z = torch_rand_float(-np.pi, np.pi, (len(env_ids),1), device=self.device)[:,0]
                 self.root_states[env_ids,3:7] = quat_from_euler_xyz(torch.zeros_like(orientation_z), torch.zeros_like(orientation_z),orientation_z)
             # base velocities
             self.root_states[env_ids, 7:13] = torch_rand_float(-0.5, 0.5, (len(env_ids), 6), device=self.device) # [7:10]: lin vel, [10:13]: ang vel
@@ -353,27 +356,35 @@ class InteractiveRobot(LeggedRobot):
         self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3
+                                    self.agent_relative_target_pos[:,:2],                                 #2
                                     self.agent_relative_door_pos[:,:2],                                 #2
-                                    # self.agent_relative_door_pos[:,:2],                                 #2
-                                    self.agent_relative_target_pos[:,:2],                               #2
                                     torch.abs(self.objects_dof_states[:,0,0]).view(-1,1),               #1  
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
-                                    self.actions                                                        #12
+                                    self.actions,                                                        #12
+                                    torch.clamp(self.root_states[:,:2]-self.env_origins[:,:2],torch.tensor([-3,-3],device=self.root_states.device),torch.tensor([3,8],device=self.root_states.device))/10                         #12
                                     ),dim=-1)
         
         # add noise if needed
         if self.add_noise:
             self.obs_buf += (2 * torch.rand_like(self.obs_buf) - 1) * self.noise_scale_vec
 
-    def generate_target_location(self, num_candidates):
+    def generate_radial_target_location(self, num_candidates):
         radius = torch.rand(num_candidates, device=self.device)*3.
         # radius = 3.
         random_angle = torch.rand(num_candidates, device=self.device)*np.pi #- np.pi/2
         x = radius * torch.sin(random_angle)
         y = radius * torch.cos(random_angle)
         return x, y
-        
+    
+    def generate_target_location(self, num_candidates):
+        x = torch.rand(num_candidates, device=self.device)*9-3
+        y = torch.rand(num_candidates, device=self.device)*5-2.5
+        # sample door position more to help robot exit the room
+        # if torch.rand(1)<0.99:
+        #     x = x*0+2
+        #     y = y*0
+        return x,y    
     
     def get_relative_translation(self, transform1, transform2):
         """_summary_
@@ -411,11 +422,18 @@ class InteractiveRobot(LeggedRobot):
 
     def reset_idx(self, env_ids):        
         if len(env_ids) != 0:
-            success = (self.root_states[env_ids, 0]>(self.env_origins[env_ids,0]+4)).type(torch.float32)
+            # success = (self.root_states[env_ids, 0]>(self.env_origins[env_ids,0]+4)).type(torch.float32)
+            if hasattr(self, 'agent_relative_target_pos'):
+                success = torch.norm(self.agent_relative_target_pos[:,:2], dim=1) < 0.1
+            else:
+                success = torch.zeros_like(env_ids, device=self.device).type(torch.float32)
             # print(success)
         super().reset_idx(env_ids)
         if len(env_ids) != 0:
             self.extras["episode"]["success"] = success
+
+    def get_robot_position(self):
+        return self.root_states[:,:2]-self.env_origins[:,:-1]
 
     def _reward_door_angle(self,):
         # past_door_bool = ((self.root_states[:,:2]-self.object_states_tensor[:,0,:2]).view(-1,2) > 0.8).type(self.objects_dof_states.type)
@@ -427,6 +445,9 @@ class InteractiveRobot(LeggedRobot):
     
     def _reward_robot_target_dist(self,):
         target_distance = torch.clip(torch.norm( self.agent_relative_target_pos[:,:2], dim=1), 0)
-        rew = torch.exp(-target_distance)
+        target_room = (self.target_states[:,0]-self.env_origins[:,0])>2
+        robot_room = (self.root_states[:,0]-self.env_origins[:,0])>2
+        same_room_mask = (target_room==robot_room).type(torch.float64)
+        rew = torch.exp(-target_distance)*same_room_mask
         # print(rew[0])
         return rew   

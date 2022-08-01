@@ -111,6 +111,14 @@ class A1FlatCfgPPO( LeggedRobotCfgPPO ):
         load_run = "Jun21_17-35-58_"
 
 class A1FlatCfg( A1RoughCfg):
+
+    class asset( A1RoughCfg.asset ):
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_face.urdf'
+        name = "a1"
+        terminate_after_contacts_on = ["base", "FL_hip", "FR_hip", "RL_hip", "RR_hip"]
+        penalize_contacts_on = ["face"]
+        self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
+        
     class terrain( A1RoughCfg.terrain ):
         mesh_type = 'plane'
         measure_heights = False
@@ -641,7 +649,7 @@ class A1DoorOpeningv2Cfg( A1RoughCfg):
 
     class env(A1RoughCfg.env ):
         num_envs = 4096
-        num_observations = 48
+        num_observations = 50
         env_spacing = 6.2
         # num_envs = 2048
     class viewer:
@@ -678,7 +686,7 @@ class A1DoorOpeningv2Cfg( A1RoughCfg):
             stand_still = -0.
             torques = -0.0002
             dof_pos_limits = -10.0
-            door_angle = 1.5
+            door_angle = 1.0
             # cross_door = 0.1 # makes the robot not open door
             # box_moved = 2.0
 
@@ -756,8 +764,10 @@ class A1DoorOpeningv2CfgPPO( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
         algorithm_class_name = 'ResidualPPO'
-        # checkpoint = "800" # -1 = last saved model
-        load_run = "Jul17_13-58-50_"
+        # checkpoint = "1700" # -1 = last saved model
+        # load_run = "Jul18_12-51-06_"
+        # load_run = "Jul19_18-49-59_"
+        load_run = "Jul21_11-18-51_"
         max_iterations = 6000
         obs_sizes = {"scaled_base_lin_vel": 3,
                     "scaled_base_ang_vel": 3,
@@ -767,6 +777,7 @@ class A1DoorOpeningv2CfgPPO( LeggedRobotCfgPPO ):
                     "relative_dof": 12,
                     "scaled_dof_vel": 12,
                     "actions": 12,
+                    "robot_position":2,
                     # synthetic observations after this point
                     "target_position": 2,
                     }
@@ -824,7 +835,8 @@ class A1DoorOpeningv2CfgPPO( LeggedRobotCfgPPO ):
                                 "door_angle",
                                 "relative_dof",
                                 "scaled_dof_vel",
-                                "actions"]
+                                "actions",
+                                "robot_position"]
                     }
         critic_obs = [                    
                     ["scaled_base_lin_vel",
@@ -835,7 +847,8 @@ class A1DoorOpeningv2CfgPPO( LeggedRobotCfgPPO ):
                     "door_angle",
                     "relative_dof",
                     "scaled_dof_vel",
-                    "actions"]
+                    "actions",
+                    "robot_position"]
                       ]
         meta_network_obs = ["scaled_base_lin_vel",
                                 "scaled_base_ang_vel",
@@ -844,7 +857,8 @@ class A1DoorOpeningv2CfgPPO( LeggedRobotCfgPPO ):
                                 "door_angle",
                                 "relative_dof",
                                 "scaled_dof_vel",
-                                "actions"]
+                                "actions",
+                                "robot_position"]
         experiment_name = 'dooropenv2'
         policy_class_name = 'MultiSkillActorCriticv3'
         # skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/straight_walker/May06_14-52-51_/model_550.pt",
@@ -1209,12 +1223,17 @@ class InteractiveTargetReachCfg( A1RoughCfg):
         measure_heights = False
         
     class asset( A1RoughCfg.asset ):
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_face.urdf'
+        name = "a1"
         terminate_after_contacts_on = ["base", "FL_hip", "FR_hip", "RL_hip", "RR_hip"]
+        penalize_contacts_on = ["face"]
         self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
+
     class env(A1RoughCfg.env ):
         num_envs = 4096
-        num_observations = 50
+        num_observations = 52
         env_spacing = 12.2
+        episode_length_s = 30
         # num_envs = 2048
     class viewer:
         ref_env = 0
@@ -1233,6 +1252,7 @@ class InteractiveTargetReachCfg( A1RoughCfg):
             ang_vel_yaw = [-0, 0]    # min max [rad/s]
             heading = [-0, 0]
     class rewards:
+        
         class scales:
             termination = -0.0
             tracking_lin_vel = 1.0
@@ -1250,8 +1270,8 @@ class InteractiveTargetReachCfg( A1RoughCfg):
             stand_still = -0.
             torques = -0.0002
             dof_pos_limits = -10.0
-            door_angle = 0.6
-            robot_target_dist = 2.0
+            door_angle = 0.8
+            robot_target_dist = 4.0
             # cross_door = 0.1 # makes the robot not open door
             # box_moved = 2.0
 
@@ -1297,94 +1317,423 @@ class InteractiveTargetReachCfg( A1RoughCfg):
 class InteractiveTargetReachCfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):
         entropy_coef = 0.01
-        residual_action_penalty_coef = 0.001 #0.05
+        residual_action_penalty_coef = 1.5 #0.05
+        gamma = 0.99
+        
+        # max_iterations = 3500
+        
 
     class policy:
         init_noise_std = 1.0
-        actor_hidden_dims = [[512, 256, 128], [256, 128], [256, 128],[256, 128], [256, 128], [256,128]]
+        actor_hidden_dims = {"straight_walk":[512, 256, 128],
+                             "standing": [256,128],
+                             "turn_left":[256, 128],
+                             "turn_right":[256, 128],
+                             "door_open":[512, 256],
+                             "residual": [512,256]
+                             }
         critic_hidden_dims = [512, 256, 128]
-        weight_network_dims = [512,256,128]
+        weight_hidden_dims = {"turn_left":[128,2],
+                              "turn_right":[128,2], 
+                             "target_reach":[512, 256, 128,4],
+                             "door_open":[512, 256, 128,2]}
+        skill_compositions = {"straight_walk": ["straight_walk"],
+                              "standing": ["standing"],
+                              "turn_left": ["straight_walk", "turn_left"],
+                              "turn_right": ["straight_walk", "turn_right"],
+                              "target_reach": ["straight_walk", "standing","turn_right","turn_left"],
+                              "door_open": ["straight_walk", "door_open"],
+                              "residual": ["residual"]
+                              }
+        meta_backbone_dims = [256, 128]
         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
+        synthetic_obs_scales = {"synth_target_position":3}
         
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
         algorithm_class_name = 'ResidualPPO'
-        # checkpoint = "800" # -1 = last saved model
-        max_iterations = 3500
-        
+        # checkpoint = "1700" # -1 = last saved model
+        # load_run = "Jul18_12-51-06_"
+        load_run = "Jul26_15-15-48_"
+        # load_run = "Jul26_07-10-21_" # no residual penalty
+        # load_run = "Jul27_10-59-17_" # no residual network
+        # resume = True
+        # resume_path = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropenv2/Jul21_11-18-51_/model_5750.pt"
+        max_iterations = 15000
         obs_sizes = {"scaled_base_lin_vel": 3,
                     "scaled_base_ang_vel": 3,
                     "projected_gravity": 3,
-                    "door_state": 2,
                     "target_position": 2,
+                    "door_position": 2,
                     "door_angle": 1,
                     "relative_dof": 12,
                     "scaled_dof_vel": 12,
-                    "actions": 12}
-        actor_obs =[["scaled_base_lin_vel",
-                    "scaled_base_ang_vel",
-                    "projected_gravity",
-                    "relative_dof",
-                    "scaled_dof_vel",
-                    "actions"],
+                    "actions": 12,
+                    "robot_position":2,
+                    # synthetic observations after this point
+                    "synth_target_position": 2,
+                    }
+        actor_obs ={
+                    "straight_walk":["scaled_base_lin_vel",
+                                        "scaled_base_ang_vel",
+                                        "projected_gravity",
+                                        "relative_dof",
+                                        "scaled_dof_vel",
+                                        "actions"],
                     
-                    ["scaled_base_lin_vel",
-                    "scaled_base_ang_vel",
-                    "projected_gravity",
-                    "relative_dof",
-                    "scaled_dof_vel",
-                    "actions"],
+                    "standing":["scaled_base_lin_vel",
+                                "scaled_base_ang_vel",
+                                "projected_gravity",
+                                "relative_dof",
+                                "scaled_dof_vel",
+                                "actions"],
                     
-                    ["scaled_base_lin_vel",
-                    "scaled_base_ang_vel",
-                    "projected_gravity",
-                    "relative_dof",
-                    "scaled_dof_vel",
-                    "actions"],
+                    "turn_left":["scaled_base_lin_vel",
+                                    "scaled_base_ang_vel",
+                                    "projected_gravity",
+                                    "relative_dof",
+                                    "scaled_dof_vel",
+                                    "actions"],
                     
-                   ["scaled_base_lin_vel",
-                    "scaled_base_ang_vel",
-                    "projected_gravity",
-                    "target_position",
-                    "relative_dof",
-                    "scaled_dof_vel",
-                    "actions"],
-                                        
-                    ["scaled_base_lin_vel",
-                    "scaled_base_ang_vel",
-                    "projected_gravity",
-                    "door_state",
-                    "door_angle",
-                    "relative_dof",
-                    "scaled_dof_vel",
-                    "actions"],
-                    
-                    #residual
-                    ["scaled_base_lin_vel",
-                    "scaled_base_ang_vel",
-                    "projected_gravity",
-                    "door_state",
-                    "target_position",
-                    "door_angle",
-                    "relative_dof",
-                    "scaled_dof_vel",
-                    "actions"]
-                    ]
+                    "turn_right":["scaled_base_lin_vel",
+                                    "scaled_base_ang_vel",
+                                    "projected_gravity",
+                                    "relative_dof",
+                                    "scaled_dof_vel",
+                                    "actions"],
+
+                    "target_reach":["scaled_base_lin_vel",
+                                    "scaled_base_ang_vel",
+                                    "projected_gravity",
+                                    "synth_target_position",
+                                    "relative_dof",
+                                    "scaled_dof_vel",
+                                    "actions"],
+                   
+                    "door_open":["scaled_base_lin_vel",
+                                "scaled_base_ang_vel",
+                                "projected_gravity",
+                                "door_position",
+                                "door_angle",
+                                "relative_dof",
+                                "scaled_dof_vel",
+                                "actions"],
+                   
+                    "residual":["scaled_base_lin_vel",
+                                "scaled_base_ang_vel",
+                                "projected_gravity",
+                                "synth_target_position",
+                                "target_position",
+                                "door_position",
+                                "door_angle",
+                                "relative_dof",
+                                "scaled_dof_vel",
+                                "actions",
+                                "robot_position"]
+                    }
         critic_obs = [                    
                     ["scaled_base_lin_vel",
                     "scaled_base_ang_vel",
                     "projected_gravity",
-                    "door_state",
+                    "synth_target_position",
                     "target_position",
+                    "door_position",
                     "door_angle",
                     "relative_dof",
                     "scaled_dof_vel",
-                    "actions"]
+                    "actions",
+                    "robot_position"]
                       ]
+        meta_network_obs = ["scaled_base_lin_vel",
+                                "scaled_base_ang_vel",
+                                "projected_gravity",
+                                "target_position",
+                                "door_position",
+                                "door_angle",
+                                "relative_dof",
+                                "scaled_dof_vel",
+                                "actions",
+                                "robot_position"]
         experiment_name = 'interactive_targetreach'
-        policy_class_name = 'MultiSkillActorCritic'
-        skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/straight_walker/May06_14-52-51_/model_550.pt",
-                        "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun08_12-04-19_/model_200.pt", #turn right
-                       "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun08_10-57-33_/model_200.pt", #turn left
-                       "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/multiskill_targetreach/Jun09_17-20-37_/model_1150.pt",
-                       "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropen/May19_14-20-14_/model_750.pt"]
+        policy_class_name = 'MultiSkillActorCriticv3'
+        # skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/straight_walker/May06_14-52-51_/model_550.pt",
+        #                 "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun08_12-04-19_/model_200.pt", #turn right
+        #                "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun08_10-57-33_/model_200.pt", #turn left
+        #                "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/multiskill_targetreach/Jun09_17-20-37_/model_1150.pt",
+        #                "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropen/May19_14-20-14_/model_750.pt"]
+        skill_paths = {"straight_walk":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/a1_flat/Jun21_17-35-58_/model_1500.pt",
+                       "standing":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/standing/Jun30_13-09-00_/model_100.pt", #standing
+                        "turn_right":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun24_13-41-47_/model_100.pt", #turn right
+                        "turn_left":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun24_13-48-02_/model_100.pt", #turn left
+                        "target_reach":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/multiskill_targetreach/Jul07_10-24-55_/model_1500.pt", #reach target
+                        "door_open":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropen/Jul11_13-04-00_/model_1500.pt"  
+                }
+
+
+##############################################################################################################
+##########################        Interactive Target Reachv2       ###########################################
+##############################################################################################################        
+        
+class InteractiveTargetReachv2Cfg( A1RoughCfg):
+    class terrain( A1RoughCfg.terrain ):
+        mesh_type = 'plane'
+        measure_heights = False
+        
+    class asset( A1RoughCfg.asset ):
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_face.urdf'
+        name = "a1"
+        terminate_after_contacts_on = ["base", "FL_hip", "FR_hip", "RL_hip", "RR_hip"]
+        penalize_contacts_on = ["face"]
+        self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
+
+    class env(A1RoughCfg.env ):
+        num_envs = 4096
+        num_observations = 52
+        env_spacing = 12.2
+        # num_envs = 2048
+    class viewer:
+        ref_env = 0
+        pos = [0, 10, 10]  # [m]
+        lookat = [5., 5., 0.]  # [m]
+
+    class commands:
+        curriculum = False
+        max_curriculum = 1.
+        num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
+        resampling_time = 10. # time before command are changed[s]
+        heading_command = True # if true: compute ang vel command from heading error
+        class ranges:
+            lin_vel_x = [0.5, 0.5] # min max [m/s]
+            lin_vel_y = [-0.0, 0.0]   # min max [m/s]
+            ang_vel_yaw = [-0, 0]    # min max [rad/s]
+            heading = [-0, 0]
+    class rewards:
+        
+        class scales:
+            termination = -0.0
+            tracking_lin_vel = 1.0
+            tracking_ang_vel = 0.0
+            lin_vel_z = -2.0
+            ang_vel_xy = -0.05
+            orientation = -0.
+            dof_vel = -0.
+            dof_acc = -2.5e-7
+            base_height = -0.1
+            feet_air_time =  1.0
+            collision = -1.
+            feet_stumble = -0.0 
+            action_rate = -0.01
+            stand_still = -0.
+            torques = -0.0002
+            dof_pos_limits = -10.0
+            door_angle = 0.8
+            robot_target_dist = 4.0
+            # cross_door = 0.1 # makes the robot not open door
+            # box_moved = 2.0
+
+        only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
+        tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
+        soft_dof_pos_limit = 1. # percentage of urdf limits, values above this limit are penalized
+        soft_dof_vel_limit = 1.
+        soft_torque_limit = 1.
+        base_height_target = 0.25
+        max_contact_force = 100. # forces above this value are penalized
+
+    class noise:
+        add_noise = False
+        noise_level = 1.0 # scales other values
+        class noise_scales:
+            dof_pos = 0.01
+            dof_vel = 1.5
+            lin_vel = 0.1
+            ang_vel = 0.2
+            gravity = 0.05
+            height_measurements = 0.1
+
+    class sim:
+        dt =  0.005
+        substeps = 1
+        gravity = [0., 0. ,-9.81]  # [m/s^2]
+        up_axis = 1  # 0 is y, 1 is z
+
+        class physx:
+            num_threads = 10
+            solver_type = 1  # 0: pgs, 1: tgs
+            num_position_iterations = 4
+            num_velocity_iterations = 1
+            contact_offset = 0.01  # [m]
+            rest_offset = 0.0   # [m]
+            bounce_threshold_velocity = 0.5 #0.5 [m/s]
+            max_depenetration_velocity = 100.0
+            max_gpu_contact_pairs = 2**23 #2**24 -> needed for 8000 envs and more
+            default_buffer_size_multiplier = 5
+            contact_collection = 2 # 0: never, 1: last sub-step, 2: all sub-steps (default=2)
+            # always_use_articulations = True
+
+class InteractiveTargetReachv2CfgPPO( LeggedRobotCfgPPO ):
+    class algorithm( LeggedRobotCfgPPO.algorithm ):
+        entropy_coef = 0.01
+        residual_action_penalty_coef = 0 #1.5 #0.05
+        # max_iterations = 3500
+        
+
+    class policy:
+        init_noise_std = 1.0
+        actor_hidden_dims = {"straight_walk":[512, 256, 128],
+                             "standing": [256,128],
+                             "turn_left":[256, 128],
+                             "turn_right":[256, 128],
+                             "door_open":[512, 256],
+                            #  "residual": [512,256]
+                             }
+        critic_hidden_dims = [512, 256, 128]
+        weight_hidden_dims = {"turn_left":[128,2],
+                              "turn_right":[128,2], 
+                             "target_reach":[512, 256, 128,4],
+                             "door_open":[512, 256, 128,2]}
+        skill_compositions = {"straight_walk": ["straight_walk"],
+                              "standing": ["standing"],
+                              "turn_left": ["straight_walk", "turn_left"],
+                              "turn_right": ["straight_walk", "turn_right"],
+                              "target_reach": ["straight_walk", "standing","turn_right","turn_left"],
+                              "door_open": ["straight_walk", "door_open"],
+                            #   "residual": ["residual"]
+                              }
+        meta_backbone_dims = [256, 128]
+        activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
+        synthetic_obs_scales = {"synth_target_position":3}
+        synthetic_obs_ingredients = ["door_position",
+                                    #  "table_position",
+                                     "wall_corner_position_00",
+                                     "wall_corner_position_10",
+                                     "wall_corner_position_11",
+                                     "wall_corner_position_12",
+                                     "wall_corner_position_02",
+                                     "wall_corner_position_01",
+                                     ]
+        
+    class runner( LeggedRobotCfgPPO.runner ):
+        run_name = ''
+        algorithm_class_name = 'ResidualPPO'
+        # checkpoint = "1700" # -1 = last saved model
+        # load_run = "Jul18_12-51-06_"
+        load_run = "Jul26_15-15-48_"
+        # load_run = "Jul26_07-10-21_" # no residual penalty
+        # load_run = "Jul27_10-59-17_" # no residual network
+        # resume = True
+        # resume_path = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropenv2/Jul21_11-18-51_/model_5750.pt"
+        max_iterations = 15000
+        obs_sizes = {"scaled_base_lin_vel": 3,
+                    "scaled_base_ang_vel": 3,
+                    "projected_gravity": 3,
+                    "target_position": 2,
+                    "door_position": 2,
+                    "door_angle": 1,
+                    "relative_dof": 12,
+                    "scaled_dof_vel": 12,
+                    "wall_corner_position_00": 2,
+                    "wall_corner_position_10": 2,
+                    "wall_corner_position_11": 2,
+                    "wall_corner_position_12": 2,
+                    "wall_corner_position_02": 2,
+                    "wall_corner_position_01": 2,
+                    "actions": 12,
+                    "robot_position": 2,
+                    # synthetic observations after this point
+                    "synth_target_position": 2,
+                    }
+        actor_obs ={
+                    "straight_walk":["scaled_base_lin_vel",
+                                        "scaled_base_ang_vel",
+                                        "projected_gravity",
+                                        "relative_dof",
+                                        "scaled_dof_vel",
+                                        "actions"],
+                    
+                    "standing":["scaled_base_lin_vel",
+                                "scaled_base_ang_vel",
+                                "projected_gravity",
+                                "relative_dof",
+                                "scaled_dof_vel",
+                                "actions"],
+                    
+                    "turn_left":["scaled_base_lin_vel",
+                                    "scaled_base_ang_vel",
+                                    "projected_gravity",
+                                    "relative_dof",
+                                    "scaled_dof_vel",
+                                    "actions"],
+                    
+                    "turn_right":["scaled_base_lin_vel",
+                                    "scaled_base_ang_vel",
+                                    "projected_gravity",
+                                    "relative_dof",
+                                    "scaled_dof_vel",
+                                    "actions"],
+
+                    "target_reach":["scaled_base_lin_vel",
+                                    "scaled_base_ang_vel",
+                                    "projected_gravity",
+                                    "synth_target_position",
+                                    "relative_dof",
+                                    "scaled_dof_vel",
+                                    "actions"],
+                   
+                    "door_open":["scaled_base_lin_vel",
+                                "scaled_base_ang_vel",
+                                "projected_gravity",
+                                "door_position",
+                                "door_angle",
+                                "relative_dof",
+                                "scaled_dof_vel",
+                                "actions"],
+                   
+                    # "residual":["scaled_base_lin_vel",
+                    #             "scaled_base_ang_vel",
+                    #             "projected_gravity",
+                    #             "synth_target_position",
+                    #             "target_position",
+                    #             "door_position",
+                    #             "door_angle",
+                    #             "relative_dof",
+                    #             "scaled_dof_vel",
+                    #             "actions",
+                    #             "robot_position"]
+                    }
+        critic_obs = [                    
+                    ["scaled_base_lin_vel",
+                    "scaled_base_ang_vel",
+                    "projected_gravity",
+                    "synth_target_position",
+                    "target_position",
+                    "door_position",
+                    "door_angle",
+                    "relative_dof",
+                    "scaled_dof_vel",
+                    "actions",
+                    "robot_position"]
+                      ]
+        meta_network_obs = ["scaled_base_lin_vel",
+                                "scaled_base_ang_vel",
+                                "projected_gravity",
+                                "target_position",
+                                "door_position",
+                                "door_angle",
+                                "relative_dof",
+                                "scaled_dof_vel",
+                                "actions",
+                                "robot_position"]
+        experiment_name = 'interactive_targetreachv2'
+        policy_class_name = 'MultiSkillActorCriticSplit'
+        # skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/straight_walker/May06_14-52-51_/model_550.pt",
+        #                 "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun08_12-04-19_/model_200.pt", #turn right
+        #                "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun08_10-57-33_/model_200.pt", #turn left
+        #                "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/multiskill_targetreach/Jun09_17-20-37_/model_1150.pt",
+        #                "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropen/May19_14-20-14_/model_750.pt"]
+        skill_paths = {"straight_walk":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/a1_flat/Jun21_17-35-58_/model_1500.pt",
+                       "standing":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/standing/Jun30_13-09-00_/model_100.pt", #standing
+                        "turn_right":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun24_13-41-47_/model_100.pt", #turn right
+                        "turn_left":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun24_13-48-02_/model_100.pt", #turn left
+                        "target_reach":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/multiskill_targetreach/Jul07_10-24-55_/model_1500.pt", #reach target
+                        "door_open":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropen/Jul11_13-04-00_/model_1500.pt"  
+                }

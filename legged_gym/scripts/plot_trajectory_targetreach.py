@@ -119,7 +119,7 @@ def play(args):
         if i == 500:
             #### Plot trajectories
             for j in range(50):
-                ax2.plot(trajectory_buffer[j,:500,0], trajectory_buffer[j,:500,1])
+                ax2.plot(trajectory_buffer[j,:900,0], trajectory_buffer[j,:900,1])
             break    
     plt.show()
 
