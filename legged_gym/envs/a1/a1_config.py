@@ -1336,7 +1336,8 @@ class InteractiveTargetReachCfgPPO( LeggedRobotCfgPPO ):
         weight_hidden_dims = {"turn_left":[128,2],
                               "turn_right":[128,2], 
                              "target_reach":[512, 256, 128,4],
-                             "door_open":[512, 256, 128,2]}
+                             "door_open":[512, 256, 128,2]
+                             }
         skill_compositions = {"straight_walk": ["straight_walk"],
                               "standing": ["standing"],
                               "turn_left": ["straight_walk", "turn_left"],
@@ -1345,7 +1346,8 @@ class InteractiveTargetReachCfgPPO( LeggedRobotCfgPPO ):
                               "door_open": ["straight_walk", "door_open"],
                               "residual": ["residual"]
                               }
-        meta_backbone_dims = [256, 128]
+        meta_backbone_dims = [512, 256, 128]
+        # meta_backbone_dims = [512, 256, 128]
         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
         synthetic_obs_scales = {"synth_target_position":3}
         
@@ -1357,6 +1359,7 @@ class InteractiveTargetReachCfgPPO( LeggedRobotCfgPPO ):
         load_run = "Jul26_15-15-48_"
         # load_run = "Jul26_07-10-21_" # no residual penalty
         # load_run = "Jul27_10-59-17_" # no residual network
+        load_run = "Aug01_16-47-57_"
         # resume = True
         # resume_path = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropenv2/Jul21_11-18-51_/model_5750.pt"
         max_iterations = 15000

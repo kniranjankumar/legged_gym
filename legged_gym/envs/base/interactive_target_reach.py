@@ -448,6 +448,8 @@ class InteractiveRobot(LeggedRobot):
         target_room = (self.target_states[:,0]-self.env_origins[:,0])>2
         robot_room = (self.root_states[:,0]-self.env_origins[:,0])>2
         same_room_mask = (target_room==robot_room).type(torch.float64)
-        rew = torch.exp(-target_distance)*same_room_mask
+        door_distance = torch.clip(torch.norm( self.agent_relative_door_pos[:,:2], dim=1), 0)
+        factor = 0.5
+        rew = torch.exp(-target_distance)*same_room_mask + torch.exp(-door_distance) *(1-same_room_mask)*factor
         # print(rew[0])
         return rew   
