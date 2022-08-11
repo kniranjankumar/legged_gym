@@ -370,10 +370,10 @@ class InteractiveRobotv2(LeggedRobot):
                                     torch.abs(self.objects_dof_states[:,0,0]).view(-1,1),               #1  
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
-                                    self.self.agent_relative_wall_pos[:,:2],                            #12
-                                    self.actions,                                                        #12
-                                    torch.clamp(self.root_states[:,:2],torch.tensor([-3,-3],device=self.root_states.device),
-                                                                       torch.tensor([3,8],device=self.root_states.device))/10                 #12
+                                    self.agent_relative_wall_pos,                            #12
+                                    self.actions                                                        #12
+                                    # torch.clamp(self.root_states[:,:2],torch.tensor([-3,-3],device=self.root_states.device),
+                                                                    #    torch.tensor([3,8],device=self.root_states.device))/10                 #12
                                     ),dim=-1)
         
         # add noise if needed
@@ -416,15 +416,17 @@ class InteractiveRobotv2(LeggedRobot):
     
     def post_physics_step(self):
         base_quat = torch.tensor([0,0,0,1],device=self.device).repeat((self.num_envs, 1))
-        print(base_quat.size())
+        # print(base_quat.size())
         self.agent_relative_door_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
                                                                [self.object_states_tensor[:,0,3:7], self.object_states_tensor[:,0,:3]])
         self.agent_relative_target_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
                                                                [self.target_states[:,3:7], self.target_states[:,:3]])
         agent_relative_wall_pos_list = [self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
-                                                                [base_quat,self.env_origins+offset]) for offset in self.wall_offsets.values()]
+                                                                [base_quat,self.env_origins+offset])[:,:2] for offset in self.wall_offsets.values()]
+        self.door_relative_target_pos = self.get_relative_translation([self.object_states_tensor[:,0,3:7], self.object_states_tensor[:,0,:3]], 
+                                                               [self.target_states[:,3:7], self.target_states[:,:3]])
         self.agent_relative_wall_pos = torch.cat(agent_relative_wall_pos_list,dim=1)
-        super(InteractiveRobot, self).post_physics_step()
+        super(InteractiveRobotv2, self).post_physics_step()
     
     def get_relative_translation(self, transform1, transform2):
         """_summary_
@@ -461,6 +463,16 @@ class InteractiveRobotv2(LeggedRobot):
     
     def _reward_robot_target_dist(self,):
         target_distance = torch.clip(torch.norm( self.agent_relative_target_pos[:,:2], dim=1), 0)
-        rew = torch.exp(-target_distance)
-        # print(rew[0])
+        target_room = (self.target_states[:,0]-self.env_origins[:,0])>2
+        robot_room = (self.root_states[:,0]-self.env_origins[:,0])>2
+        same_room_mask = (target_room==robot_room).type(torch.float64)
+        door_distance = torch.clip(torch.norm( self.agent_relative_door_pos[:,:2], dim=1), 0)
+        target_door_distance = torch.clip(torch.norm(self.door_relative_target_pos[:,:2],dim=1), 0)
+        factor = 1
+        # rew = torch.exp(-target_distance)*same_room_mask + torch.exp(-door_distance) *(1-same_room_mask)*factor
+        rew = torch.exp(-target_distance)*same_room_mask + torch.exp(-door_distance-target_door_distance) *(1-same_room_mask)
+        
+        # print(rew[1])
+        # print(same_room_mask[1])
+        
         return rew   

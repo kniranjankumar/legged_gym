@@ -116,10 +116,10 @@ def play(args):
             camera_position += camera_vel * env.dt
             env.set_camera(camera_position, camera_position + camera_direction)
     
-        if i == 500:
+        if i == 1500:
             #### Plot trajectories
-            for j in range(50):
-                ax2.plot(trajectory_buffer[j,:900,0], trajectory_buffer[j,:900,1])
+            for j in range(10):
+                ax2.plot(trajectory_buffer[j,:1500,0], trajectory_buffer[j,:1500,1])
             break    
     plt.show()
 
