@@ -24,7 +24,7 @@ class StraightWalkingRobot(LeggedRobot):
     def compute_observations(self):
         """Compute observations by using the skill' observation_types
         """
-        print(self.contact_forces[0])
+        # print(self.contact_forces[0])
         
         self.scaled_base_lin_vel = self.base_lin_vel * self.obs_scales.lin_vel
         # self.scaled_base_lin_vel[:,0] = 1.0

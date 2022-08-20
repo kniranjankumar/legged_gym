@@ -15,6 +15,7 @@ class InteractiveRobot(LeggedRobot):
         self.igibson_asset_root = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/resources/"
         self.asset_paths = ["scenes/8903/two_room_house.urdf",
                             "objects/lack_table/lack.urdf",
+                            "objects/couch/1d8716f741424998f29666f384be6c43.urdf"
                             # "trash_can/11259/11259.urdf",
                             # "trash_can/102254/102254.urdf",
                             # "office_chair/179/179.urdf",
@@ -23,7 +24,7 @@ class InteractiveRobot(LeggedRobot):
                             ]
         self.asset_offsets = [[2.0,0.0,0.93],
                               [-1,0,0],
-                              [-2,2,1],
+                              [-3,0,0.34],
                               [4,4,2],
                               [4,-4,2],
                               [-4,4,2]
@@ -32,10 +33,11 @@ class InteractiveRobot(LeggedRobot):
         
         self.asset_orientations = [[ 0, 0, 0.7071068, 0.7071068 ],
                                     [0,0,0,1],
-                                    [0,0,0,1],
+                                    [ 0, 0, 0.7071068, 0.7071068 ],
                                     [0,0,0,1],
                                     [0,0,0,1],
                                     [0,0,0,1]]
+        self.scales = [1,1,2]
         self.actor_dofs = [12]
         self.num_actors = 1 + 1 + len(self.asset_paths)
         
@@ -224,13 +226,15 @@ class InteractiveRobot(LeggedRobot):
             self.gym.set_actor_rigid_body_properties(env_handle, actor_handle, body_props, recomputeInertia=True)
             self.envs.append(env_handle)
             self.actor_handles.append(actor_handle)
-            
+            count = 0
             # self.object_handles.append(cube_handle)
-            for asset, location, orientation in zip(igibson_assets,self.asset_offsets, self.asset_orientations):
+            for asset, location, orientation,scale in zip(igibson_assets,self.asset_offsets, self.asset_orientations,self.scales):
                 asset_start_pose = gymapi.Transform()
                 asset_start_pose.p = gymapi.Vec3(*location) + gymapi.Vec3(*self.env_origins[i].clone())
                 asset_start_pose.r = gymapi.Quat(*orientation)
                 object_handle = self.gym.create_actor(env_handle, asset, asset_start_pose, "door"+str(i), i, 1)
+                if scale > 1:
+                    self.gym.set_actor_scale(env_handle,object_handle, scale)
                 self.object_handles.append(object_handle)
                 props = self.gym.get_actor_dof_properties(env_handle, object_handle)
                 props["driveMode"].fill(gymapi.DOF_MODE_NONE)
@@ -238,6 +242,7 @@ class InteractiveRobot(LeggedRobot):
                 props["damping"].fill(0.0)
                 props["friction"].fill(0.5)
                 self.gym.set_actor_dof_properties(env_handle, object_handle, props)
+                count += 1
             cube_handle = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube",self.num_envs+1, 0)
             self.gym.set_rigid_body_color(env_handle, cube_handle, 0, gymapi.MESH_VISUAL, gymapi.Vec3(1,0,0))
                   
@@ -352,13 +357,31 @@ class InteractiveRobot(LeggedRobot):
         # print(torch.abs(self.objects_dof_states[:,0,0]))
         # print(self.base_lin_vel[0].tolist())
         
+        #V1 observation
+        # self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
+        #                             self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
+        #                             self.robot_angle.unsqueeze(1),                                                   #1
+        #                             self.projected_gravity,                                             #3
+        #                             self.agent_relative_target_pos[:,:2],                                 #2
+        #                             self.agent_relative_door_pos[:,:2],                                 #2
+        #                             # self.agent_relative_table_pos[:,:2],                                 #2
+        #                             torch.abs(self.objects_dof_states[:,0,0]).view(-1,1),               #1  
+        #                             (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
+        #                             self.dof_vel * self.obs_scales.dof_vel,                             #12
+        #                             self.actions,                                                        #12
+        #                             torch.clamp(self.root_states[:,:2]-self.env_origins[:,:2],torch.tensor([-3,-3],device=self.root_states.device),torch.tensor([3,8],device=self.root_states.device))/10,                         #12
+        #                             self.target_room.type(torch.float32).unsqueeze(1),
+        #                             self.robot_room.type(torch.float32).unsqueeze(1)
+        #                             ),dim=-1)
         
         self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
+                                    self.robot_angle.unsqueeze(1),                                                   #1
                                     self.projected_gravity,                                             #3
                                     self.agent_relative_target_pos[:,:2],                                 #2
                                     self.agent_relative_door_pos[:,:2],                                 #2
-                                    # self.agent_relative_table_pos[:,:2],                                 #2
+                                    self.agent_relative_table_pos[:,:2],                                 #2
+                                    self.agent_relative_couch_pos[:,:2],
                                     torch.abs(self.objects_dof_states[:,0,0]).view(-1,1),               #1  
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
@@ -367,7 +390,6 @@ class InteractiveRobot(LeggedRobot):
                                     self.target_room.type(torch.float32).unsqueeze(1),
                                     self.robot_room.type(torch.float32).unsqueeze(1)
                                     ),dim=-1)
-        
         # add noise if needed
         if self.add_noise:
             self.obs_buf += (2 * torch.rand_like(self.obs_buf) - 1) * self.noise_scale_vec
@@ -413,10 +435,15 @@ class InteractiveRobot(LeggedRobot):
                                                                [self.target_states[:,3:7], self.target_states[:,:3]])
         self.agent_relative_table_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
                                                                [self.object_states_tensor[:,1,3:7], self.object_states_tensor[:,1,:3]])
+        self.agent_relative_couch_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
+                                                               [self.object_states_tensor[:,2,3:7], self.object_states_tensor[:,2,:3]])
+
         self.door_relative_target_pos = self.get_relative_translation([self.object_states_tensor[:,0,3:7], self.object_states_tensor[:,0,:3]], 
                                                                [self.target_states[:,3:7], self.target_states[:,:3]])
         self.target_room = (self.target_states[:,0]-self.env_origins[:,0])>2
         self.robot_room = (self.root_states[:,0]-self.env_origins[:,0])>2
+        self.robot_angle = normalize_angle(get_euler_xyz(self.root_states[:,3:7])[-1])
+        # print(self.robot_angle.size())
         super(InteractiveRobot, self).post_physics_step()
     
     def get_relative_translation(self, transform1, transform2):

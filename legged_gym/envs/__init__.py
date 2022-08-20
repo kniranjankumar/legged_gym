@@ -73,3 +73,4 @@ task_registry.register( "crouching", CrouchingRobot, A1CrouchingCfg(), A1Crouchi
 
 task_registry.register("interactive_targetreach", InteractiveRobot, InteractiveTargetReachCfg(), InteractiveTargetReachCfgPPO())
 task_registry.register("interactive_targetreachv2", InteractiveRobotv2, InteractiveTargetReachv2Cfg(), InteractiveTargetReachv2CfgPPO())
+task_registry.register("interactive_targetreachv3", InteractiveRobot, InteractiveTargetReachv3Cfg(), InteractiveTargetReachv3CfgPPO())

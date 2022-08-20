@@ -35,7 +35,7 @@ from matplotlib import pyplot as plt
 import isaacgym
 from legged_gym.envs import *
 from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Logger
-
+import cv2
 import numpy as np
 import torch
 
@@ -82,11 +82,17 @@ def play(args):
     # ax.hold(True)
     # plt.show(False)
     plt.draw()
-    num_skills = len(train_cfg.runner.skill_paths)
-    chart = ax.bar(range(num_skills+1), [1.0]*(num_skills+1))
+    # skills = set(train_cfg.policy.weight_hidden_dims.keys()).union(train_cfg.policy.skill_compositions.keys())
+    skills = train_cfg.policy.skill_compositions.keys()
+    num_skills = len(skills)
+    chart = ax.bar(skills, [1.0]*(num_skills))
+    # ax.set_xticklabels(list(skills))
     weights_list = []
     trajectory_buffer = np.zeros([50,2000,2]) # 50 trajectories, 1000 steps, 2 dimensions
-    
+    dones_tracker = np.zeros([50]).astype("bool")
+    map_bw = cv2.imread("./resources/2room_map_smaller.png")
+    trajectory_length = 1500
+    # early_termination
     for i in range(int(env.max_episode_length)):
         actions = policy(obs.detach())
         trajectory_buffer[:,i,:] = env.get_robot_position().detach().cpu().numpy()
@@ -101,6 +107,7 @@ def play(args):
         plt.pause(0.0001)
         
         obs, _, rews, dones, infos = env.step(actions.detach())
+        dones_tracker = np.logical_or(dones_tracker, dones.detach().cpu().numpy())
         if dones[0] == True:
             ax1.clear()
             num_pts2plot = min(len(weights_list)-1, 500)
@@ -116,10 +123,14 @@ def play(args):
             camera_position += camera_vel * env.dt
             env.set_camera(camera_position, camera_position + camera_direction)
     
-        if i == 1500:
+        if i == trajectory_length:
             #### Plot trajectories
-            for j in range(10):
-                ax2.plot(trajectory_buffer[j,:1500,0], trajectory_buffer[j,:1500,1])
+            ax2.imshow(map_bw, extent=[0, 1000, 0, 500])
+            for j in range(30):
+                if not dones_tracker[j]:
+                    x_image = trajectory_buffer[j,50:trajectory_length,0]*(1000//12)+330
+                    y_image = trajectory_buffer[j,50:trajectory_length,1]*(500//6)+250
+                    ax2.plot(x_image, y_image)
             break    
     plt.show()
 
