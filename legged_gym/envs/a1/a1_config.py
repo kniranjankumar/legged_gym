@@ -248,7 +248,7 @@ class A1CrouchingCfg(A1FlatCfg):
             
     class env(A1RoughCfg.env ):
         num_envs = 4096
-        num_observations = 47
+        num_observations = 46
         env_spacing = 6.2
     
     class rewards:
@@ -328,18 +328,19 @@ class A1CrouchingCfgPPO( A1FlatCfgPPO ):
         weight_network_dims = [512,256]
         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
         
-    class runner( A1FlatCfgPPO.runner ):
-        experiment_name = 'crouching'
+    # class runner( A1FlatCfgPPO.runner ):
+    #     experiment_name = 'crouching'
         # load_run = 'Jun17_18-18-34_'
     class runner( LeggedRobotCfgPPO.runner ):
     #     run_name = ''
         # checkpoint = "600"
         algorithm_class_name = 'ResidualPPO'
-        
+        load_run = "Aug21_22-24-48_"
+        max_iterations = 6000
         obs_sizes = {"scaled_base_lin_vel": 3,
                     "scaled_base_ang_vel": 3,
                     "projected_gravity": 3,
-                    "object_position": 2,
+                    "height": 1,
                     "relative_dof": 12,
                     "scaled_dof_vel": 12,
                     "actions": 12}
@@ -353,7 +354,7 @@ class A1CrouchingCfgPPO( A1FlatCfgPPO ):
                     ["scaled_base_lin_vel",
                     "scaled_base_ang_vel",
                     "projected_gravity",
-                    "object_position",
+                    "height",
                     "relative_dof",
                     "scaled_dof_vel",
                     "actions"]
@@ -362,7 +363,7 @@ class A1CrouchingCfgPPO( A1FlatCfgPPO ):
                     ["scaled_base_lin_vel",
                     "scaled_base_ang_vel",
                     "projected_gravity",
-                    "object_position",
+                    "height",
                     "relative_dof",
                     "scaled_dof_vel",
                     "actions"]
@@ -1817,15 +1818,18 @@ class InteractiveTargetReachv3Cfg( A1RoughCfg):
 
     class env(A1RoughCfg.env ):
         num_envs = 4096
-        num_observations = 59
+        num_observations = 60
         env_spacing = 12.2
         episode_length_s = 40
         # num_envs = 2048
+    # class viewer:
+    #     ref_env = 0
+    #     pos = [20, 1, 10]  # [m]
+    #     lookat = [20., 0., 0.]  # [m]
     class viewer:
         ref_env = 0
-        pos = [20, 1, 10]  # [m]
-        lookat = [20., 0., 0.]  # [m]
-
+        pos = [0, -2, 0.5]  # [m]
+        lookat = [0., 0.5, 0.]  # [m]
     class commands:
         curriculum = False
         max_curriculum = 1.
@@ -1903,7 +1907,7 @@ class InteractiveTargetReachv3Cfg( A1RoughCfg):
 class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):
         entropy_coef = 0.01
-        residual_action_penalty_coef = 1.5 #1.5 #0.05
+        residual_action_penalty_coef = 0 #1.5 #0.05
         gamma = 0.99
         
         # max_iterations = 3500
@@ -1917,14 +1921,16 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                              "turn_right":[256, 128],
                              "door_open":[512, 256],
                              "door_openv2": [512,256],
-                             "residual": [512,256]
+                             "crouching": [256,128]
+                            #  "residual": [512,256]
                              }
         critic_hidden_dims = [512, 256, 128]
         weight_hidden_dims = {"turn_left":[128,2],
                               "turn_right":[128,2], 
                              "target_reach":[512, 256, 128,4],
                              "door_open":[512, 256, 128,2],
-                             "door_openv2":[256,128,9]
+                             "door_openv2":[256,128,9],
+                             "crouching": [512,256,2]
                              }
         skill_compositions = {
                             #   "straight_walk": ["straight_walk"],
@@ -1934,7 +1940,8 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                               "target_reach": ["straight_walk", "standing","turn_right","turn_left"],
                               "door_open": ["straight_walk", "door_open"],
                               "door_openv2":["straight_walk", "standing","turn_right","turn_left","target_reach","door_open","door_openv2"],
-                              "residual": ["residual"]
+                                "crouching": ["straight_walk","crouching"]
+                            #   "residual": ["residual"]
                               }
         meta_backbone_dims = [512, 256, 256]
         # meta_backbone_dims = [512, 256, 128]
@@ -1973,8 +1980,8 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
         
         # load_run = "Aug17_19-54-25_"
         # load_run = "Aug18_12-53-21_"
-        load_run = "Aug20_01-05-14_"
-        resume = True
+        # load_run = "Aug20_01-05-14_"
+        # resume = True
         # resume_path = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropenv2/Jul21_11-18-51_/model_5750.pt"
         max_iterations = 15000
         obs_sizes = {"scaled_base_lin_vel": 3,
@@ -1992,6 +1999,7 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                     "robot_position":2,
                     "target_room":1,
                     "robot_room":1,
+                    "height": 1,
                     # synthetic observations after this point
                     "synth_target_position": 2,
                     }
@@ -2052,20 +2060,27 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                                 "actions",
                                 "robot_position"],
                     
-                    "residual":["scaled_base_lin_vel",
+                    "crouching":["scaled_base_lin_vel",
                                 "scaled_base_ang_vel",
-                                "robot_angle",
                                 "projected_gravity",
-                                "synth_target_position",
-                                "target_position",
-                                "door_position",
-                                "door_angle",
+                                "height",
                                 "relative_dof",
                                 "scaled_dof_vel",
-                                "actions",
-                                "robot_position",
-                                "target_room",
-                                "robot_room"]
+                                "actions"]
+                    # "residual":["scaled_base_lin_vel",
+                    #             "scaled_base_ang_vel",
+                    #             "robot_angle",
+                    #             "projected_gravity",
+                    #             "synth_target_position",
+                    #             "target_position",
+                    #             "door_position",
+                    #             "door_angle",
+                    #             "relative_dof",
+                    #             "scaled_dof_vel",
+                    #             "actions",
+                    #             "robot_position",
+                    #             "target_room",
+                    #             "robot_room"]
                     }
         critic_obs = [                    
                     ["scaled_base_lin_vel",
@@ -2083,7 +2098,8 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                     "actions",
                     "robot_position",
                     "target_room",
-                    "robot_room"]
+                    "robot_room",
+                    "height"]
                       ]
         meta_network_obs = ["scaled_base_lin_vel",
                                 "scaled_base_ang_vel",
@@ -2098,7 +2114,8 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                                 "actions",
                                 "robot_position",
                                 "target_room",
-                                "robot_room"
+                                "robot_room",
+                                "height"
                                 ]
         experiment_name = 'interactive_targetreachv3'
         policy_class_name = 'MultiSkillActorCriticSplit'
@@ -2113,5 +2130,6 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                         "turn_left":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/turning/Jun24_13-48-02_/model_100.pt", #turn left
                         "target_reach":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/multiskill_targetreach/Jul07_10-24-55_/model_1500.pt", #reach target
                         "door_open":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropen/Jul11_13-04-00_/model_1500.pt",
-                        "door_openv2":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropenv2/Jul21_11-18-51_/model_6000.pt"  
+                        "door_openv2":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropenv2/Jul21_11-18-51_/model_6000.pt",
+                        "crouching":"/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/crouching/Aug21_22-24-48_/model_6000.pt"
                 }

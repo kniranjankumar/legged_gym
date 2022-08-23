@@ -222,8 +222,8 @@ class CrouchingRobot(LeggedRobot):
             # env_ids_int32 = torch.flatten(torch.stack((env_ids.to(dtype=torch.int32)*self.num_actors, env_ids.to(dtype=torch.int32)*2+1),1))
             actor_ids = torch.flatten(torch.linspace(0, self.num_actors*self.num_envs-1,self.num_envs*self.num_actors,device=self.device).reshape(self.num_envs,self.num_actors)[env_ids])
             actor_ids_int32 = actor_ids.to(dtype=torch.int32)
-            
-            self.cube_states[env_ids] = torch.tensor([3.5, 0.1, 0.35]+[ 0, 0.0149994, 0, 0.9998875 ]+[0.]*6, device=self.root_states.device)
+            # 5 degree slope
+            self.cube_states[env_ids] = torch.tensor([3.5, 0.0, 0.1+0.2]+[ 0, 0.0174524, 0, 0.9998477 ]+[0.]*6, device=self.root_states.device)
             self.cube_states[env_ids,:3] += self.env_origins[env_ids]
             # x, y = self.generate_target_location(len(env_ids))
             # self.target_states[env_ids,0] = x
@@ -270,7 +270,8 @@ class CrouchingRobot(LeggedRobot):
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3
                                     # torch.zeros_like(relative_cube_pos),                              #3
-                                    self.agent_relative_cube_pos[:,:2],                                 #2 
+                                    # self.agent_relative_cube_pos[:,:2],                                 #2 
+                                    10*(self.height.unsqueeze(1)-0.38),
                                     # self.agent_relative_target_pos[:,:2],                               #2    
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
@@ -287,6 +288,10 @@ class CrouchingRobot(LeggedRobot):
     def post_physics_step(self):
         self.agent_relative_cube_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
                                                                [self.cube_states[:,3:7], self.cube_states[:,:3]])
+        self.cube_relative_agent_pos = self.get_relative_translation([self.cube_states[:,3:7], self.cube_states[:,:3]],
+                                                               [self.root_states[:,3:7], self.root_states[:,:3]])
+        self.height = 0.38-torch.abs((self.cube_relative_agent_pos[:,0]+2.5)*0.03492018373)
+        print((self.height[0]-0.38)*10)
         # self.agent_relative_target_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
                                                             #    [self.target_states[:,3:7], self.target_states[:,:3]])
         # self.cube_relative_target_pos = self.get_relative_translation([self.cube_states[:,3:7], self.cube_states[:,:3]],

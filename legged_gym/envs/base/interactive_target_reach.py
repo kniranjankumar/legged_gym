@@ -15,7 +15,12 @@ class InteractiveRobot(LeggedRobot):
         self.igibson_asset_root = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/resources/"
         self.asset_paths = ["scenes/8903/two_room_house.urdf",
                             "objects/lack_table/lack.urdf",
-                            "objects/couch/1d8716f741424998f29666f384be6c43.urdf"
+                            # "objects/couch/1d8716f741424998f29666f384be6c43.urdf",
+                            # "objects/couch/1d8716f741424998f29666f384be6c43.urdf",
+                            "objects/couch2/couch.urdf",
+                            "objects/center_table/242b7dde571b99bd3002761e7a3ba3bd.urdf",
+                            "objects/office_chair/5a60c649a221293d72ed554eb3baedcc.urdf",
+                            "objects/console_table/console_table.urdf"
                             # "trash_can/11259/11259.urdf",
                             # "trash_can/102254/102254.urdf",
                             # "office_chair/179/179.urdf",
@@ -23,21 +28,25 @@ class InteractiveRobot(LeggedRobot):
                             # "office_chair/2490/2490.urdf"
                             ]
         self.asset_offsets = [[2.0,0.0,0.93],
-                              [-1,0,0],
-                              [-3,0,0.34],
-                              [4,4,2],
-                              [4,-4,2],
-                              [-4,4,2]
+                              [-1,1,-0.2],
+                            #   [-1,2,0.34],
+                              [-1,2,0.0],
+                            
+                              [7,0,0.36],
+                              [6,0,0],
+                              [-1,-2.7,0]
+                            #   [-4,4,2]
                               ]
         self.cube_offset = [-1., -0.13, 0.5]
         
         self.asset_orientations = [[ 0, 0, 0.7071068, 0.7071068 ],
-                                    [0,0,0,1],
+                                    [0,0,0.7071068, 0.7071068 ],
+                                    [ 0, 0, 0,1 ],
                                     [ 0, 0, 0.7071068, 0.7071068 ],
-                                    [0,0,0,1],
-                                    [0,0,0,1],
+                                    [ 0, 0, 0.7071068, 0.7071068 ],
+                                    [0,0, 0.7071068, 0.7071068 ],
                                     [0,0,0,1]]
-        self.scales = [1,1,2]
+        self.scales = [1,1.0,2,2,1,1,1]
         self.actor_dofs = [12]
         self.num_actors = 1 + 1 + len(self.asset_paths)
         
@@ -388,7 +397,8 @@ class InteractiveRobot(LeggedRobot):
                                     self.actions,                                                        #12
                                     torch.clamp(self.root_states[:,:2]-self.env_origins[:,:2],torch.tensor([-3,-3],device=self.root_states.device),torch.tensor([3,8],device=self.root_states.device))/10,                         #12
                                     self.target_room.type(torch.float32).unsqueeze(1),
-                                    self.robot_room.type(torch.float32).unsqueeze(1)
+                                    self.robot_room.type(torch.float32).unsqueeze(1),
+                                    torch.ones_like(self.robot_angle).unsqueeze(1)*-1.7
                                     ),dim=-1)
         # add noise if needed
         if self.add_noise:
