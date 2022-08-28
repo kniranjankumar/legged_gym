@@ -1860,8 +1860,9 @@ class InteractiveTargetReachv3Cfg( A1RoughCfg):
             stand_still = -0.
             torques = -0.0002
             dof_pos_limits = -10.0
-            door_angle = 2.0 #4.0 maybe its 2->1?
-            robot_target_dist = 5.0
+            door_angle = 4.0 #4.0 maybe its 2->1?
+            robot_target_dist = 4.0
+            target_reach = 800
             # cross_door = 0.1 # makes the robot not open door
             # box_moved = 2.0
 
@@ -1921,7 +1922,7 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                              "turn_right":[256, 128],
                              "door_open":[512, 256],
                              "door_openv2": [512,256],
-                             "crouching": [256,128]
+                             "crouching": [256,128],
                             #  "residual": [512,256]
                              }
         critic_hidden_dims = [512, 256, 128]
@@ -1935,12 +1936,12 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
         skill_compositions = {
                             #   "straight_walk": ["straight_walk"],
                               "standing": ["standing"],
-                            #   "turn_left": ["straight_walk", "turn_left"],
-                            #   "turn_right": ["straight_walk", "turn_right"],
+                              "turn_left": ["straight_walk", "turn_left"],
+                              "turn_right": ["straight_walk", "turn_right"],
                               "target_reach": ["straight_walk", "standing","turn_right","turn_left"],
                               "door_open": ["straight_walk", "door_open"],
                               "door_openv2":["straight_walk", "standing","turn_right","turn_left","target_reach","door_open","door_openv2"],
-                                "crouching": ["straight_walk","crouching"]
+                                "crouching": ["straight_walk","crouching"],
                             #   "residual": ["residual"]
                               }
         meta_backbone_dims = [512, 256, 256]
@@ -1981,6 +1982,8 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
         # load_run = "Aug17_19-54-25_"
         # load_run = "Aug18_12-53-21_"
         # load_run = "Aug20_01-05-14_"
+        # load_run = "Aug23_17-42-04_"
+        load_run = "Aug27_10-34-57_"
         # resume = True
         # resume_path = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropenv2/Jul21_11-18-51_/model_5750.pt"
         max_iterations = 15000
@@ -2066,7 +2069,8 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                                 "height",
                                 "relative_dof",
                                 "scaled_dof_vel",
-                                "actions"]
+                                "actions"],
+                    
                     # "residual":["scaled_base_lin_vel",
                     #             "scaled_base_ang_vel",
                     #             "robot_angle",

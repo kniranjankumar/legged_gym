@@ -28,9 +28,9 @@ class InteractiveRobot(LeggedRobot):
                             # "office_chair/2490/2490.urdf"
                             ]
         self.asset_offsets = [[2.0,0.0,0.93],
-                              [-1,1,-0.2],
+                              [-1,0,-0.05],
                             #   [-1,2,0.34],
-                              [-1,2,0.0],
+                              [-1,2,0.1],
                             
                               [7,0,0.36],
                               [6,0,0],
@@ -41,14 +41,17 @@ class InteractiveRobot(LeggedRobot):
         
         self.asset_orientations = [[ 0, 0, 0.7071068, 0.7071068 ],
                                     [0,0,0.7071068, 0.7071068 ],
-                                    [ 0, 0, 0,1 ],
+                                    [ 0, 0, 0.7071068, 0.7071068 ],
                                     [ 0, 0, 0.7071068, 0.7071068 ],
                                     [ 0, 0, 0.7071068, 0.7071068 ],
                                     [0,0, 0.7071068, 0.7071068 ],
                                     [0,0,0,1]]
-        self.scales = [1,1.0,2,2,1,1,1]
+        self.scales = [1,
+                       1.0,
+                       2.3,2,1,1,1]
         self.actor_dofs = [12]
         self.num_actors = 1 + 1 + len(self.asset_paths)
+        self.failed_envs = None
         
         # kwargs["num_velocity_iterations"] = 1
         super(InteractiveRobot, self).__init__(*args,**kwargs)
@@ -182,7 +185,8 @@ class InteractiveRobot(LeggedRobot):
         igibson_asset_options.density = 10.0
         igibson_asset_options.fix_base_link = True
         igibson_asset_options.vhacd_enabled = True
-        # igibson_asset_options.vhacd_params.max_convex_hulls = 10
+        igibson_asset_options.vhacd_params.max_convex_hulls = 1000
+        igibson_asset_options.vhacd_params.resolution = 500000
         for asset_path in self.asset_paths:
             folder, urdf_name = os.path.split(asset_path)
             path = os.path.join(self.igibson_asset_root,folder)
@@ -290,7 +294,7 @@ class InteractiveRobot(LeggedRobot):
                 robot_x, robot_y = self.generate_target_location(len(env_ids))
                 # self.root_states[env_ids,0] += robot_x
                 # self.root_states[env_ids,1] += robot_y
-                self.root_states[env_ids,0] += torch_rand_float(-3., 1., (len(env_ids),1), device=self.device)[:,0] #randomize distance from door
+                self.root_states[env_ids,0] += torch_rand_float(-2., 1., (len(env_ids),1), device=self.device)[:,0] #randomize distance from door
                 self.root_states[env_ids,1] += torch_rand_float(-2., 2., (len(env_ids),1), device=self.device)[:,0] #randomize distance from door
                 orientation_z = torch_rand_float(-np.pi, np.pi, (len(env_ids),1), device=self.device)[:,0]
                 self.root_states[env_ids,3:7] = quat_from_euler_xyz(torch.zeros_like(orientation_z), torch.zeros_like(orientation_z),orientation_z)
@@ -398,7 +402,7 @@ class InteractiveRobot(LeggedRobot):
                                     torch.clamp(self.root_states[:,:2]-self.env_origins[:,:2],torch.tensor([-3,-3],device=self.root_states.device),torch.tensor([3,8],device=self.root_states.device))/10,                         #12
                                     self.target_room.type(torch.float32).unsqueeze(1),
                                     self.robot_room.type(torch.float32).unsqueeze(1),
-                                    torch.ones_like(self.robot_angle).unsqueeze(1)*-1.7
+                                    torch.ones_like(self.robot_angle).unsqueeze(1)*-1.4
                                     ),dim=-1)
         # add noise if needed
         if self.add_noise:
@@ -414,7 +418,14 @@ class InteractiveRobot(LeggedRobot):
     
     def generate_target_location(self, num_candidates):
         x = torch.rand(num_candidates, device=self.device)*10-3
-        y = torch.rand(num_candidates, device=self.device)*5-2.0
+        y = torch.rand(num_candidates, device=self.device)*4.8-2.4
+        if self.failed_envs.size(0)>0 and False:
+            idxs = torch.randint(0,self.failed_envs.size(0),num_candidates)
+            failed_xy = self.failed_envs[idxs,:]
+            mask = (torch.rand(num_candidates)>0.1).type(torch.float32)
+            x = mask*x +(1-mask)*failed_xy[:,0]
+            y = mask*y +(1-mask)*failed_xy[:,1]
+            
         # sample door position more to help robot exit the room
         # if torch.rand(1)<0.99:
         #     x = x*0+2
@@ -453,6 +464,7 @@ class InteractiveRobot(LeggedRobot):
         self.target_room = (self.target_states[:,0]-self.env_origins[:,0])>2
         self.robot_room = (self.root_states[:,0]-self.env_origins[:,0])>2
         self.robot_angle = normalize_angle(get_euler_xyz(self.root_states[:,3:7])[-1])
+        self.success = torch.norm(self.agent_relative_target_pos[:,:2], dim=1) < 0.5
         # print(self.robot_angle.size())
         super(InteractiveRobot, self).post_physics_step()
     
@@ -467,11 +479,22 @@ class InteractiveRobot(LeggedRobot):
         return tf_apply(q,t,transform2[1])
 
     def reset_idx(self, env_ids):        
+        if self.failed_envs == None:
+            self.failed_envs = self.target_states[env_ids,:2]
         if len(env_ids) != 0:
             # success = (self.root_states[env_ids, 0]>(self.env_origins[env_ids,0]+4)).type(torch.float32)
             if hasattr(self, 'agent_relative_target_pos'):
-                success = torch.logical_or(torch.norm(self.agent_relative_target_pos[env_ids,:2], dim=1) < 0.5, self.episode_length_buf[env_ids] < 50)
+                # success = torch.logical_or(torch.norm(self.agent_relative_target_pos[env_ids,:2], dim=1) < 0.5, self.episode_length_buf[env_ids] < 50)
                 # print(self.agent_relative_door_pos[torch.logical_not(success),:2])
+                success = self.success[env_ids]
+                not_messy_init = self.episode_length_buf[env_ids] > 50
+                not_messy_init = not_messy_init | success
+                success = torch.masked_select(success, not_messy_init)
+                # failed_envs = torch.stack([torch.masked_select(self.target_states[:,0],self.success),
+                #                               torch.masked_select(self.target_states[:,1],self.success)], dim=1)
+                # if failed_envs.size(0)>0:
+                #     self.failed_envs = failed_envs
+                # print(self.failed_envs.size())
             else:
                 success = torch.zeros_like(env_ids, device=self.device).type(torch.float32)
             # print(success)
@@ -507,3 +530,10 @@ class InteractiveRobot(LeggedRobot):
         # print(same_room_mask[1])
         
         return rew   
+    
+    def _reward_target_reach(self):
+        return self.success.type(torch.float64)
+
+    def check_termination(self):
+        super().check_termination()
+        self.reset_buf |= self.success 

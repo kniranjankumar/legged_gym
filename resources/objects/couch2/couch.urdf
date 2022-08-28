@@ -4,13 +4,13 @@
     <visual>
       <origin xyz="0 0 0"/>
       <geometry>
-        <mesh filename="mesh/couch.obj"/>
+        <mesh filename="mesh/couch_lowpoly.obj"/>
       </geometry>
     </visual>
     <collision>
       <origin xyz="0 0 0"/>
       <geometry>
-        <mesh filename="mesh/couch.obj"/>
+        <mesh filename="mesh/couch_lowpoly.obj"/>
       </geometry>
     </collision>
      <inertial>
