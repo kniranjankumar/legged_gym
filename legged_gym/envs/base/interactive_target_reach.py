@@ -399,7 +399,8 @@ class InteractiveRobot(LeggedRobot):
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
                                     self.actions,                                                        #12
-                                    torch.clamp(self.root_states[:,:2]-self.env_origins[:,:2],torch.tensor([-3,-3],device=self.root_states.device),torch.tensor([3,8],device=self.root_states.device))/10,                         #12
+                                    (self.root_states[:,:2]-self.env_origins[:,:2])/10,
+                                    # torch.clamp(self.root_states[:,:2]-self.env_origins[:,:2],torch.tensor([-3,-3],device=self.root_states.device),torch.tensor([3,8],device=self.root_states.device))/10,                         #12
                                     self.target_room.type(torch.float32).unsqueeze(1),
                                     self.robot_room.type(torch.float32).unsqueeze(1),
                                     torch.ones_like(self.robot_angle).unsqueeze(1)*-1.4
@@ -464,7 +465,7 @@ class InteractiveRobot(LeggedRobot):
         self.target_room = (self.target_states[:,0]-self.env_origins[:,0])>2
         self.robot_room = (self.root_states[:,0]-self.env_origins[:,0])>2
         self.robot_angle = normalize_angle(get_euler_xyz(self.root_states[:,3:7])[-1])
-        self.success = torch.norm(self.agent_relative_target_pos[:,:2], dim=1) < 0.5
+        # self.success = torch.norm(self.agent_relative_target_pos[:,:2], dim=1) < 0.5
         # print(self.robot_angle.size())
         super(InteractiveRobot, self).post_physics_step()
     
@@ -486,7 +487,8 @@ class InteractiveRobot(LeggedRobot):
             if hasattr(self, 'agent_relative_target_pos'):
                 # success = torch.logical_or(torch.norm(self.agent_relative_target_pos[env_ids,:2], dim=1) < 0.5, self.episode_length_buf[env_ids] < 50)
                 # print(self.agent_relative_door_pos[torch.logical_not(success),:2])
-                success = self.success[env_ids]
+                # success = self.success[env_ids]
+                success = torch.norm(self.agent_relative_target_pos[env_ids,:2], dim=1) < 0.5
                 not_messy_init = self.episode_length_buf[env_ids] > 50
                 not_messy_init = not_messy_init | success
                 success = torch.masked_select(success, not_messy_init)
@@ -507,14 +509,14 @@ class InteractiveRobot(LeggedRobot):
 
     def _reward_door_angle(self,):
         # past_door_bool = ((self.root_states[:,:2]-self.object_states_tensor[:,0,:2]).view(-1,2) > 0.8).type(self.objects_dof_states.type)
-        same_room_mask = (self.target_room==self.robot_room).type(torch.float64)
+        # same_room_mask = (self.target_room==self.robot_room).type(torch.float64)
         # print(same_room_mask[0],(self.target_states[:,0]-self.env_origins[:,0])[0])
         return torch.abs(self.objects_dof_states[:,0,0])*self.target_room.type(torch.float64)
     
     def _reward_cross_door(self,):
-        crossed_bool = self.root_states[:, 0]>(self.env_origins[:,0]+4)
+        crossed_bool = self.root_states[:, 0]>(self.env_origins[:,0]+2)
 
-        return crossed_bool.type(torch.float64)*(1-same_room_mask)
+        return crossed_bool.type(torch.float64)*(self.target_room.type(torch.float64))
     
     def _reward_robot_target_dist(self,):
         target_distance = torch.clip(torch.norm( self.agent_relative_target_pos[:,:2], dim=1), 0)
@@ -524,16 +526,16 @@ class InteractiveRobot(LeggedRobot):
         door_distance = torch.clip(torch.norm( self.agent_relative_door_pos[:,:2], dim=1), 0)
         target_door_distance = torch.clip(torch.norm(self.door_relative_target_pos[:,:2],dim=1), 0)
         # rew = torch.exp(-target_distance)*same_room_mask + torch.exp(-door_distance) *(1-same_room_mask)*factor
-        rew = torch.exp(-target_distance)*same_room_mask + torch.exp(-door_distance-target_door_distance) *(1-same_room_mask)
+        rew = torch.exp(-target_distance)*same_room_mask + torch.exp(-(door_distance+target_door_distance)) *(1-same_room_mask)
         
         # print(rew[1])
         # print(same_room_mask[1])
         
         return rew   
     
-    def _reward_target_reach(self):
-        return self.success.type(torch.float64)
+    # def _reward_target_reach(self):
+    #     return self.success.type(torch.float64)
 
     def check_termination(self):
         super().check_termination()
-        self.reset_buf |= self.success 
+        # self.reset_buf |= self.success 

@@ -266,12 +266,15 @@ class CrouchingRobot(LeggedRobot):
         # relative_cube_pos[:,3] = 0
         # print(self.relative_cube_pos[0])
         # print(self.agent_relative_cube_pos[0,:2])
+        print(10*(self.height[0]-0.38),)
         self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3
                                     # torch.zeros_like(relative_cube_pos),                              #3
                                     # self.agent_relative_cube_pos[:,:2],                                 #2 
-                                    10*(self.height.unsqueeze(1)-0.38),
+                                    # 10*(self.height.unsqueeze(1)-0.38),
+                                    torch.ones_like(self.projected_gravity[:,0]).unsqueeze(1)*-1.4,
+                                    
                                     # self.agent_relative_target_pos[:,:2],                               #2    
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
@@ -291,7 +294,7 @@ class CrouchingRobot(LeggedRobot):
         self.cube_relative_agent_pos = self.get_relative_translation([self.cube_states[:,3:7], self.cube_states[:,:3]],
                                                                [self.root_states[:,3:7], self.root_states[:,:3]])
         self.height = 0.38-torch.abs((self.cube_relative_agent_pos[:,0]+2.5)*0.03492018373)
-        print((self.height[0]-0.38)*10)
+        # print((self.height[0]-0.38)*10)
         # self.agent_relative_target_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
                                                             #    [self.target_states[:,3:7], self.target_states[:,:3]])
         # self.cube_relative_target_pos = self.get_relative_translation([self.cube_states[:,3:7], self.cube_states[:,:3]],

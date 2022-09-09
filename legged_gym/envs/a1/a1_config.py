@@ -1853,16 +1853,16 @@ class InteractiveTargetReachv3Cfg( A1RoughCfg):
             dof_vel = -0.
             dof_acc = -2.5e-7
             base_height = -0.1
-            feet_air_time =  1.0
+            feet_air_time = 1.0
             collision = -2 #-1.
-            feet_stumble = -0.0 
+            feet_stumble = -0.0
             action_rate = -0.01
             stand_still = -0.
             torques = -0.0002
             dof_pos_limits = -10.0
-            door_angle = 4.0 #4.0 maybe its 2->1?
-            robot_target_dist = 4.0
-            target_reach = 800
+            door_angle = 2.0 #0.8 #4.0 maybe its 2->1?
+            robot_target_dist = 5.0
+            # target_reach = 800
             # cross_door = 0.1 # makes the robot not open door
             # box_moved = 2.0
 
@@ -1909,6 +1909,7 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):
         entropy_coef = 0.01
         residual_action_penalty_coef = 0 #1.5 #0.05
+        residual_weight_penalty_coef = 0
         gamma = 0.99
         
         # max_iterations = 3500
@@ -1983,8 +1984,12 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
         # load_run = "Aug18_12-53-21_"
         # load_run = "Aug20_01-05-14_"
         # load_run = "Aug23_17-42-04_"
-        load_run = "Aug27_10-34-57_"
+        # load_run = "Aug27_10-34-57_"
+        # load_run = "Aug28_20-11-06_"
+        # load_run = "Sep05_15-03-25_"
+        load_run = "Sep06_21-41-40_"
         # resume = True
+        checkpoint = 5000
         # resume_path = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/dooropenv2/Jul21_11-18-51_/model_5750.pt"
         max_iterations = 15000
         obs_sizes = {"scaled_base_lin_vel": 3,
@@ -2111,7 +2116,8 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                                 "projected_gravity",
                                 "target_position",
                                 "door_position",
-                                # "table_position",
+                                "table_position",
+                                "couch_position",
                                 "door_angle",
                                 "relative_dof",
                                 "scaled_dof_vel",
@@ -2119,7 +2125,8 @@ class InteractiveTargetReachv3CfgPPO( LeggedRobotCfgPPO ):
                                 "robot_position",
                                 "target_room",
                                 "robot_room",
-                                "height"
+                                # "height",
+                                "synth_target_position"
                                 ]
         experiment_name = 'interactive_targetreachv3'
         policy_class_name = 'MultiSkillActorCriticSplit'
