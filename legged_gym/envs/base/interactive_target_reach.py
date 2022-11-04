@@ -13,42 +13,144 @@ import torch
 class InteractiveRobot(LeggedRobot):
     def __init__(self,*args,**kwargs):
         self.igibson_asset_root = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/resources/"
-        self.asset_paths = ["scenes/8903/two_room_house.urdf",
-                            "objects/lack_table/lack.urdf",
-                            # "objects/couch/1d8716f741424998f29666f384be6c43.urdf",
-                            # "objects/couch/1d8716f741424998f29666f384be6c43.urdf",
-                            "objects/couch2/couch.urdf",
-                            "objects/center_table/242b7dde571b99bd3002761e7a3ba3bd.urdf",
-                            "objects/office_chair/5a60c649a221293d72ed554eb3baedcc.urdf",
-                            "objects/console_table/console_table.urdf"
-                            # "trash_can/11259/11259.urdf",
-                            # "trash_can/102254/102254.urdf",
-                            # "office_chair/179/179.urdf",
-                            # "office_chair/723/723.urdf",
-                            # "office_chair/2490/2490.urdf"
-                            ]
-        self.asset_offsets = [[2.0,0.0,0.93],
-                              [-1,0,-0.05],
-                            #   [-1,2,0.34],
-                              [-1,2,0.1],
-                            
-                              [7,0,0.36],
-                              [6,0,0],
-                              [-1,-2.7,0]
-                            #   [-4,4,2]
-                              ]
-        self.cube_offset = [-1., -0.13, 0.5]
-        
-        self.asset_orientations = [[ 0, 0, 0.7071068, 0.7071068 ],
-                                    [0,0,0.7071068, 0.7071068 ],
-                                    [ 0, 0, 0.7071068, 0.7071068 ],
-                                    [ 0, 0, 0.7071068, 0.7071068 ],
-                                    [ 0, 0, 0.7071068, 0.7071068 ],
-                                    [0,0, 0.7071068, 0.7071068 ],
-                                    [0,0,0,1]]
         self.scales = [1,
                        1.0,
-                       2.3,2,1,1,1]
+                       2.3,2,1,1,1,0.6,0.5]
+        self.objects = [{"path":"scenes/8903/two_room_house.urdf",
+                         "pos":[2.0,0.0,0.93],
+                         "quat":[ 0, 0, 0.7071068, 0.7071068 ],
+                         "scale":1
+                        },
+                        {"path":"objects/lack_table/lack.urdf",
+                         "pos":[-1,0,-0.05],
+                         "quat":[ 0, 0, 0.7071068, 0.7071068 ],
+                         "scale":1
+                        },
+                        {"path":"objects/couch2/couch.urdf",
+                         "pos":[-1,2,0.1],
+                         "quat":[ 0, 0, 0.7071068, 0.7071068 ],
+                         "scale":2.3
+                        },
+                        {"path":"objects/center_table/242b7dde571b99bd3002761e7a3ba3bd.urdf",
+                         "pos":[7,0,0.36],
+                         "quat":[ 0, 0, 0.7071068, 0.7071068 ],
+                         "scale":2
+                        },
+                        {"path":"objects/office_chair/5a60c649a221293d72ed554eb3baedcc.urdf",
+                         "pos":[6,0,0],
+                         "quat":[ 0, 0, 0.7071068, 0.7071068 ],
+                         "scale":1
+                        },
+                        {"path":"objects/console_table/console_table.urdf",
+                         "pos":[-1,-2.7,0],
+                         "quat":[ 0, 0, 0.7071068, 0.7071068 ],
+                         "scale":1
+                        },
+                        
+                        # decor
+                        {"path":"objects/books/books.urdf",
+                         "pos":[-1,0,0.45],
+                         "quat":[0,0,0,1],
+                         "scale":1
+                        },
+                        {"path":"objects/TV/TV.urdf",
+                         "pos":[-1,-2.7,0.9],
+                         "quat":[0,0,1, 0],
+                         "scale":0.6
+                        },
+                        {"path":"objects/picture/picture.urdf",
+                         "pos":[-3.9,0,1.2],
+                         "quat":[0,0,0.7071068, 0.7071068],
+                         "scale":0.5
+                        },
+                        {"path":"objects/floor_lamp/floor_lamp.urdf",
+                         "pos":[-2.9,2,1.2],
+                         "quat":[0,0,0.7071068, 0.7071068],
+                         "scale":1.0
+                        },
+                        {"path":"objects/speaker/speaker.urdf",
+                         "pos":[-2.0,-2.8,0],
+                         "quat":[0,0,1,0],
+                         "scale":1.0
+                        },
+                        {"path":"objects/speaker/speaker.urdf",
+                         "pos":[0.0,-2.8,0],
+                         "quat":[0,0,1,0],
+                         "scale":1.0
+                        },
+                        {"path":"objects/shelf/shelf.urdf",
+                         "pos":[5.0,-2.7,0.9],
+                         "quat":[0,0,1,0],
+                         "scale":2.0
+                        },       
+                        {"path":"objects/laptop/laptop.urdf",
+                         "pos":[7.0,0.1,0.53],
+                         "quat":[0,0,-0.7071068, 0.7071068],
+                         "scale":0.3
+                        },
+                        {"path":"objects/guitar/guitar.urdf",
+                         "pos":[7.8,-2.75,0.6],
+                         "quat":[0.0,0.2,-0.7071068, 0.7071068],
+                         "scale":1.0
+                        },
+                        {"path":"objects/floor_lamp2/floor_lamp2.urdf",
+                         "pos":[7.2,1.2,0.9],
+                         "quat":[0,0,0,1],
+                         "scale":1.0
+                        }
+                        ]
+        self.asset_paths = [item["path"] for item in self.objects]
+        self.asset_offsets = [item["pos"] for item in self.objects]
+        self.asset_orientations = [item["quat"] for item in self.objects]
+        self.scales = [item["scale"] for item in self.objects]
+        self.cube_offset = [-1., -0.13, 0.5]
+        
+        # self.asset_paths = ["scenes/8903/two_room_house.urdf",
+        #                     "objects/lack_table/lack.urdf",
+        #                     # "objects/couch/1d8716f741424998f29666f384be6c43.urdf",
+        #                     # "objects/couch/1d8716f741424998f29666f384be6c43.urdf",
+        #                     "objects/couch2/couch.urdf",
+        #                     "objects/center_table/242b7dde571b99bd3002761e7a3ba3bd.urdf",
+        #                     "objects/office_chair/5a60c649a221293d72ed554eb3baedcc.urdf",
+        #                     "objects/console_table/console_table.urdf",
+        #                     "objects/books/books.urdf",
+        #                     "objects/TV/TV.urdf",
+        #                     "objects/picture/picture.urdf"
+        #                     # "trash_can/11259/11259.urdf",
+        #                     # "trash_can/102254/102254.urdf",
+        #                     # "office_chair/179/179.urdf",
+        #                     # "office_chair/723/723.urdf",
+        #                     # "office_chair/2490/2490.urdf"
+        #                     ]
+        # self.asset_offsets = [[2.0,0.0,0.93],
+        #                       [-1,0,-0.05],
+        #                     #   [-1,2,0.34],
+        #                       [-1,2,0.1],
+                            
+        #                       [7,0,0.36],
+        #                       [6,0,0],
+        #                       [-1,-2.7,0],
+        #                       [-1,0,0.45],
+        #                       [-1,-2.7,0.9],
+        #                       [-3.9,0,1.2]
+        #                     #   [-4,4,2]
+        #                       ]
+        
+        # self.asset_orientations = [[ 0, 0, 0.7071068, 0.7071068 ],
+        #                             [0,0,0.7071068, 0.7071068 ],
+        #                             [ 0, 0, 0.7071068, 0.7071068 ],
+        #                             [ 0, 0, 0.7071068, 0.7071068 ],
+        #                             [ 0, 0, 0.7071068, 0.7071068 ],
+        #                             [0,0, 0.7071068, 0.7071068 ],
+        #                             [0,0,0,1],
+        #                             [0,0,1, 0],
+        #                             [0,0,0.7071068, 0.7071068]
+        #                             # [0.7071068,0,0,0.7071068]
+        #                             # [0,0,0.7071068, 0.7071068 ]
+        #                             ]
+        # self.scales = [1,
+        #                1.0,
+        #                2.3,2,1,1,1,0.6,0.5]
         self.actor_dofs = [12]
         self.num_actors = 1 + 1 + len(self.asset_paths)
         self.failed_envs = None
@@ -179,6 +281,7 @@ class InteractiveRobot(LeggedRobot):
         
         cube_asset = self.gym.load_asset(self.sim, "../../IsaacGym_Preview_3_Package/isaacgym/assets/", target_asset, cube_asset_options)
         
+        self.gym.set_light_parameters(self.sim, 0, gymapi.Vec3(0.5, 0.5, 0.5), gymapi.Vec3(0.1, 0.1, 0.1), gymapi.Vec3(0, 0, 1))
         
         igibson_assets = []
         igibson_asset_options = gymapi.AssetOptions()
@@ -241,13 +344,13 @@ class InteractiveRobot(LeggedRobot):
             self.actor_handles.append(actor_handle)
             count = 0
             # self.object_handles.append(cube_handle)
-            for asset, location, orientation,scale in zip(igibson_assets,self.asset_offsets, self.asset_orientations,self.scales):
+            for k, asset, location, orientation,scale in zip(range(len(igibson_assets)),igibson_assets,self.asset_offsets, self.asset_orientations,self.scales):
                 asset_start_pose = gymapi.Transform()
                 asset_start_pose.p = gymapi.Vec3(*location) + gymapi.Vec3(*self.env_origins[i].clone())
                 asset_start_pose.r = gymapi.Quat(*orientation)
                 object_handle = self.gym.create_actor(env_handle, asset, asset_start_pose, "door"+str(i), i, 1)
-                if scale > 1:
-                    self.gym.set_actor_scale(env_handle,object_handle, scale)
+                # if scale > 1:
+                self.gym.set_actor_scale(env_handle,object_handle, scale)
                 self.object_handles.append(object_handle)
                 props = self.gym.get_actor_dof_properties(env_handle, object_handle)
                 props["driveMode"].fill(gymapi.DOF_MODE_NONE)
@@ -303,7 +406,11 @@ class InteractiveRobot(LeggedRobot):
             self.object_states_tensor[env_ids,:,:] = self.objects_init_states
             self.object_states_tensor[env_ids,:,:3] += self.env_origins[env_ids].unsqueeze(1)
             self.target_states[env_ids] = torch.tensor([0.38, 0.1, 0.2]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)
+            # x, y = self.generate_target_location(len(env_ids))
             x, y = self.generate_target_location(len(env_ids))
+            # x = x*0+6
+            # y = y*0+2.5
+            
             self.target_states[env_ids,0] = x
             self.target_states[env_ids,1] = y
             self.target_states[env_ids, :3] += self.env_origins[env_ids]
@@ -389,12 +496,12 @@ class InteractiveRobot(LeggedRobot):
         
         self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
-                                    self.robot_angle.unsqueeze(1),                                                   #1
+                                    self.robot_angle.unsqueeze(1)/6,                                                   #1
                                     self.projected_gravity,                                             #3
-                                    self.agent_relative_target_pos[:,:2],                                 #2
-                                    self.agent_relative_door_pos[:,:2],                                 #2
-                                    self.agent_relative_table_pos[:,:2],                                 #2
-                                    self.agent_relative_couch_pos[:,:2],
+                                    self.agent_relative_target_pos[:,:2]/10,                                 #2
+                                    self.agent_relative_door_pos[:,:2]/10,                                 #2
+                                    self.agent_relative_table_pos[:,:2]/10,                                 #2
+                                    self.agent_relative_couch_pos[:,:2]/10,
                                     torch.abs(self.objects_dof_states[:,0,0]).view(-1,1),               #1  
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
@@ -403,7 +510,7 @@ class InteractiveRobot(LeggedRobot):
                                     # torch.clamp(self.root_states[:,:2]-self.env_origins[:,:2],torch.tensor([-3,-3],device=self.root_states.device),torch.tensor([3,8],device=self.root_states.device))/10,                         #12
                                     self.target_room.type(torch.float32).unsqueeze(1),
                                     self.robot_room.type(torch.float32).unsqueeze(1),
-                                    torch.ones_like(self.robot_angle).unsqueeze(1)*-1.4
+                                    torch.ones_like(self.robot_angle).unsqueeze(1)*-1.4*0
                                     ),dim=-1)
         # add noise if needed
         if self.add_noise:
@@ -420,6 +527,8 @@ class InteractiveRobot(LeggedRobot):
     def generate_target_location(self, num_candidates):
         x = torch.rand(num_candidates, device=self.device)*10-3
         y = torch.rand(num_candidates, device=self.device)*4.8-2.4
+        # x = torch.rand(num_candidates, device=self.device)*0-1.0
+        # y = torch.rand(num_candidates, device=self.device)*4.8*0 +2.2
         if self.failed_envs.size(0)>0 and False:
             idxs = torch.randint(0,self.failed_envs.size(0),num_candidates)
             failed_xy = self.failed_envs[idxs,:]
@@ -464,7 +573,9 @@ class InteractiveRobot(LeggedRobot):
                                                                [self.target_states[:,3:7], self.target_states[:,:3]])
         self.target_room = (self.target_states[:,0]-self.env_origins[:,0])>2
         self.robot_room = (self.root_states[:,0]-self.env_origins[:,0])>2
-        self.robot_angle = normalize_angle(get_euler_xyz(self.root_states[:,3:7])[-1])
+        self.robot_angle = get_euler_xyz(self.base_quat)[2]
+        
+        # self.robot_angle = normalize_angle(get_euler_xyz(self.root_states[:,3:7])[-1])
         # self.success = torch.norm(self.agent_relative_target_pos[:,:2], dim=1) < 0.5
         # print(self.robot_angle.size())
         super(InteractiveRobot, self).post_physics_step()

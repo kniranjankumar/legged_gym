@@ -9,6 +9,7 @@ from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Log
 from legged_gym.envs.a1.a1_config import A1FlatCfg, A1RoughCfgPPO
 import numpy as np
 import torch
+import pybullet as p
             
 class TurningRobot(LeggedRobot):
     def __init__(self,*args,**kwargs):
@@ -24,7 +25,8 @@ class TurningRobot(LeggedRobot):
     def compute_observations(self):
         """Compute observations by using the skill' observation_types
         """
-        
+        # print(self.projected_gravity[0].tolist())
+        # print([item[0].tolist() for item in get_euler_xyz(self.base_quat)])
         self.scaled_base_lin_vel = self.base_lin_vel * self.obs_scales.lin_vel
         self.scaled_base_ang_vel = self.base_ang_vel  * self.obs_scales.ang_vel
         self.relative_dof = (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos

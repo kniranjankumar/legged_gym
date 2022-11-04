@@ -131,18 +131,30 @@ class CrouchingRobot(LeggedRobot):
         puck_asset_file = "urdf/puck.urdf"
         cube_asset_options = gymapi.AssetOptions()
         puck_asset_options = gymapi.AssetOptions()
+        igibson_asset_options = gymapi.AssetOptions()
+        igibson_asset_options.density = 10.0
+        igibson_asset_options.fix_base_link = True
+        igibson_asset_options.vhacd_enabled = True
+        igibson_asset_options.vhacd_params.max_convex_hulls = 1000
+        igibson_asset_options.vhacd_params.resolution = 500000
         puck_asset_options.density = 0.5
         cube_asset_options.fix_base_link = True
         # cube_asset_options.density = 0.01
         
-        cube_asset = self.gym.load_asset(self.sim, asset_root, asset_file, cube_asset_options)
+        # cube_asset = self.gym.load_asset(self.sim, asset_root, asset_file, cube_asset_options)
         puck_asset = self.gym.load_asset(self.sim, asset_root, puck_asset_file, puck_asset_options)
+        table_asset = self.gym.load_asset(self.sim, 
+                                         "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/resources/", 
+                                         "objects/lack_table/lack.urdf", 
+                                         igibson_asset_options)
+        
         print("loaded 📦 asset")
         cube_pose = gymapi.Transform()
         cube_pose.r = gymapi.Quat(0, 0, 0, 1)
         # cube_pose.p = gymapi.Vec3(2, 0, 2)
-
-
+        table_pose = gymapi.Transform()
+        table_pose.r = gymapi.Quat(0,0,0.7071068, 0.7071068)
+        table_pose.p = gymapi.Vec3(-3,0,-2.0)
 
         base_init_state_list = self.cfg.init_state.pos + self.cfg.init_state.rot + self.cfg.init_state.lin_vel + self.cfg.init_state.ang_vel #+ [2,0,2]+ [0,0,0,1] + [0,0,0] + [0,0,0]
         self.base_init_state = to_torch(base_init_state_list, device=self.device, requires_grad=False)
@@ -164,6 +176,7 @@ class CrouchingRobot(LeggedRobot):
             env_handle = self.gym.create_env(self.sim, env_lower, env_upper, int(np.sqrt(self.num_envs)))
             pos = self.env_origins[i].clone()
             cube_pose.p = gymapi.Vec3(*pos) + cube_offset
+            table_pose.p = table_pose.p + gymapi.Vec3(*self.env_origins[i].clone())
             # pos[:2] += torch_rand_float(-1., 1., (2,1), device=self.device).squeeze(1)
             pos[2] = 0.3
             start_pose.p = gymapi.Vec3(*pos)
@@ -173,18 +186,21 @@ class CrouchingRobot(LeggedRobot):
             # self.gym.set_asset_rigid_shape_properties(cube_asset, rigid_shape_props)
 
             # cube_handle = self.gym.create_actor(env_handle, puck_asset, cube_pose, "puck", i, 0) # manipulate this cube
-            
-            cube_handle = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube", i, 0) #target marker
-            self.gym.set_rigid_body_color(env_handle, cube_handle, 0, gymapi.MESH_VISUAL, gymapi.Vec3(1,0,0))
+            table_handle = self.gym.create_actor(env_handle, table_asset, table_pose, "table", i, 0) #target marker
+            # cube_handle = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube", i, 0) #target marker
+            # self.gym.set_rigid_body_color(env_handle, cube_handle, 0, gymapi.MESH_VISUAL, gymapi.Vec3(1,0,0))
             # self.gym.set_actor_scale(env_handle, cube_handle, 4)
+            # self.gym.set_rigid_body_color(env_handle, table_handle, 0, gymapi.MESH_VISUAL, gymapi.Vec3(165/255,42/255,42/255))
+            
             dof_props = self._process_dof_props(dof_props_asset, i)
             self.gym.set_actor_dof_properties(env_handle, actor_handle, dof_props)
             body_props = self.gym.get_actor_rigid_body_properties(env_handle, actor_handle)
             body_props = self._process_rigid_body_props(body_props, i)
-            self.gym.set_actor_rigid_body_properties(env_handle, actor_handle, body_props, recomputeInertia=True)
+            # self.gym.set_actor_rigid_body_properties(env_handle, actor_handle, body_props, recomputeInertia=True)
             self.envs.append(env_handle)
             self.actor_handles.append(actor_handle)
-            self.cube_handles.append(cube_handle)
+            # self.cube_handles.append(cube_handle)
+            self.cube_handles.append(table_handle)
 
         self.feet_indices = torch.zeros(len(feet_names), dtype=torch.long, device=self.device, requires_grad=False)
         for i in range(len(feet_names)):
@@ -223,7 +239,9 @@ class CrouchingRobot(LeggedRobot):
             actor_ids = torch.flatten(torch.linspace(0, self.num_actors*self.num_envs-1,self.num_envs*self.num_actors,device=self.device).reshape(self.num_envs,self.num_actors)[env_ids])
             actor_ids_int32 = actor_ids.to(dtype=torch.int32)
             # 5 degree slope
-            self.cube_states[env_ids] = torch.tensor([3.5, 0.0, 0.1+0.2]+[ 0, 0.0174524, 0, 0.9998477 ]+[0.]*6, device=self.root_states.device)
+            # self.cube_states[env_ids] = torch.tensor([3.5, 0.0, 0.1+0.2]+[ 0, 0.0174524, 0, 0.9998477 ]+[0.]*6, device=self.root_states.device)
+            self.cube_states[env_ids] = torch.tensor([2.0, 0.0, -0.17]+[ 0,0,0,1 ]+[0.]*6, device=self.root_states.device)
+            
             self.cube_states[env_ids,:3] += self.env_origins[env_ids]
             # x, y = self.generate_target_location(len(env_ids))
             # self.target_states[env_ids,0] = x
@@ -265,15 +283,17 @@ class CrouchingRobot(LeggedRobot):
         """
         # relative_cube_pos[:,3] = 0
         # print(self.relative_cube_pos[0])
-        # print(self.agent_relative_cube_pos[0,:2])
-        print(10*(self.height[0]-0.38),)
+        print(self.agent_relative_cube_pos[0,:2])
+        # duck_ht = torch.ones_like(self.projected_gravity[:,0]).unsqueeze(1)*-1.4
+        duck_ht = -1.4+torch.abs(self.agent_relative_cube_pos[:,0]).unsqueeze(1)*0.8
+        # print(10*(self.height[0]-0.38),)
         self.obs_buf = torch.cat((  self.base_lin_vel * self.obs_scales.lin_vel,                        #3
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3
                                     # torch.zeros_like(relative_cube_pos),                              #3
                                     # self.agent_relative_cube_pos[:,:2],                                 #2 
                                     # 10*(self.height.unsqueeze(1)-0.38),
-                                    torch.ones_like(self.projected_gravity[:,0]).unsqueeze(1)*-1.4,
+                                    duck_ht,
                                     
                                     # self.agent_relative_target_pos[:,:2],                               #2    
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12

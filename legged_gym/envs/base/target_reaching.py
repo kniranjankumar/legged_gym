@@ -295,11 +295,11 @@ class TargetReachingRobot(LeggedRobot):
         max_vel = self.cfg.domain_rand.max_push_vel_xy
         self.root_states[:, 7:9] = torch_rand_float(-max_vel, max_vel, (self.num_envs, 2), device=self.device) # lin vel x/y
         self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.root_states.contiguous()))
-        print("pushing")
+        # print("pushing")
         
     def _reward_target_reach(self,):
         target_distance = torch.clip(torch.norm(self.relative_cube_pos[:,:2], dim=1), 0)
-        rew = torch.exp(-target_distance)
+        rew = torch.exp(-target_distance/2)
         # print(rew[0])
         return rew
     
@@ -310,7 +310,7 @@ class TargetReachingRobot(LeggedRobot):
             success = None
             if self.relative_cube_pos != None:
                 success = (torch.clip(torch.norm(self.relative_cube_pos[:,:2], dim=1), 0)<0.3).type(torch.float32)
-                print(success)
+                # print(success)
         super().reset_idx(env_ids)
         if len(env_ids) != 0 and success != None:
             self.extras["episode"]["success"] = success

@@ -18,7 +18,7 @@
     <visual name="left_wall_0___1">
       <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
       <geometry>
-        <box size="2.5 0.1 0.5"/>
+        <box size="2.5 0.1 3.0"/>
       </geometry>
     </visual>
     <collision>
@@ -32,7 +32,7 @@
     <visual name="left_wall_1___1">
       <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
       <geometry>
-        <box size="12.0 0.1 0.5"/>
+        <box size="12.0 0.1 3.0"/>
       </geometry>
     </visual>
     <collision>
@@ -46,7 +46,7 @@
     <visual name="right_wall_1___1">
       <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
       <geometry>
-        <box size="12.0 0.1 0.5"/>
+        <box size="12.0 0.1 3.0"/>
       </geometry>
     </visual>
     <collision>
@@ -60,7 +60,7 @@
     <visual name="back_wall_1___1">
       <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
       <geometry>
-        <box size="6.0 0.1 0.5"/>
+        <box size="6.0 0.1 3.0"/>
       </geometry>
     </visual>
     <collision>
@@ -75,7 +75,7 @@
     <visual name="back_wall_1___1">
       <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
       <geometry>
-        <box size="6.0 0.1 0.5"/>
+        <box size="6.0 0.1 3.0"/>
       </geometry>
     </visual>
     <collision>
@@ -89,7 +89,7 @@
     <visual name="right_wall_0___1">
       <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0"/>
       <geometry>
-        <box size="2.5 0.1 0.5"/>
+        <box size="2.5 0.1 3.0"/>
       </geometry>
     </visual>
     <collision>

@@ -186,6 +186,7 @@ class DoorOpeningRobotv2(LeggedRobot):
         self.base_init_state = to_torch(base_init_state_list, device=self.device, requires_grad=False)
         start_pose = gymapi.Transform()
         # start_pose.p = gymapi.Vec3(*self.base_init_state[:3])
+        self.gym.set_light_parameters(self.sim, 0, gymapi.Vec3(0.5, 0.5, 0.5), gymapi.Vec3(0.1, 0.1, 0.1), gymapi.Vec3(0, 0, 1))
         
 
         self._get_env_origins()
@@ -345,12 +346,13 @@ class DoorOpeningRobotv2(LeggedRobot):
                                     self.base_ang_vel  * self.obs_scales.ang_vel,                       #3
                                     self.projected_gravity,                                             #3
                                     # self.agent_relative_door_pos[:,:2],                                 #2
-                                    self.agent_relative_door_pos[:,:2],                                 #2
+                                    self.agent_relative_door_pos[:,:2]/10,                                 #2
                                     torch.abs(self.objects_dof_states[:,0,0]).view(-1,1),               #1  
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
                                     self.actions,
-                                    torch.clamp(self.root_states[:,:2],-3,3)/10                                                   #12
+                                    self.robot_angle.view(-1,1)/6, #
+                                    # torch.clamp(self.root_states[:,:2],-3,3)/10                                                   #12
                                     ),dim=-1)
         
         # add noise if needed
@@ -370,6 +372,8 @@ class DoorOpeningRobotv2(LeggedRobot):
     def post_physics_step(self):
         self.agent_relative_door_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
                                                                [self.object_states_tensor[:,0,3:7], self.object_states_tensor[:,0,:3]])
+        self.robot_angle = get_euler_xyz(self.base_quat)[2]
+        # print(self.robot_angle[0])
         super(DoorOpeningRobotv2, self).post_physics_step()
     
     def get_relative_translation(self, transform1, transform2):
@@ -389,10 +393,13 @@ class DoorOpeningRobotv2(LeggedRobot):
     def _reward_cross_door(self,):
         crossed_bool = self.root_states[:, 0]>(self.env_origins[:,0]+4)
         return crossed_bool.type(torch.float64)
-    
+
+    def _reward_robot_door_dist(self,):
+        target_distance = torch.clip(torch.norm( self.agent_relative_door_pos[:,:2], dim=1), 0)    
     # def check_if_in_box(self,):
     #     in_box_bool = (self.root_states[:,:2]<self.env_origins[:,:-1]).all(1) & (self.root_states[:,:2]<self.env_origins[:,1:]).all(1)
     #     return in_box_bool.type(torch.float64)
+        return torch.exp(-target_distance/10)
     
     def reset_idx(self, env_ids):
         

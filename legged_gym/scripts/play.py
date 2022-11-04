@@ -30,7 +30,7 @@
 
 from legged_gym import LEGGED_GYM_ROOT_DIR
 import os
-
+import time
 import isaacgym
 from legged_gym.envs import *
 from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Logger
@@ -70,11 +70,12 @@ def play(args):
     stop_state_log = 100 # number of steps before plotting states
     stop_rew_log = env.max_episode_length + 1 # number of steps before print average episode rewards
     camera_position = np.array(env_cfg.viewer.pos, dtype=np.float64)
-    camera_vel = np.array([1., 1., 0.])
+    camera_vel = np.array([0.5, 0., 0.])
     camera_direction = np.array(env_cfg.viewer.lookat) - np.array(env_cfg.viewer.pos)
     img_idx = 0
-
+    # input()
     for i in range(10*int(env.max_episode_length)):
+        time.sleep(0.001)
         actions = policy(obs.detach())
         obs, _, rews, dones, infos = env.step(actions.detach())
         if RECORD_FRAMES:
@@ -104,7 +105,8 @@ def play(args):
                 }
             )
         elif i==stop_state_log:
-            logger.plot_states()
+            pass
+            # logger.plot_states()
         if  0 < i < stop_rew_log:
             if infos["episode"]:
                 num_episodes = torch.sum(env.reset_buf).item()
@@ -116,6 +118,6 @@ def play(args):
 if __name__ == '__main__':
     EXPORT_POLICY = True
     RECORD_FRAMES = False
-    MOVE_CAMERA = False
+    MOVE_CAMERA = True
     args = get_args()
     play(args)

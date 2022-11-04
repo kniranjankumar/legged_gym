@@ -38,7 +38,7 @@ from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Log
 
 import numpy as np
 import torch
-
+import time
 
 def play(args):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
@@ -50,8 +50,8 @@ def play(args):
     env_cfg.noise.add_noise = False
     env_cfg.domain_rand.randomize_friction = False
     env_cfg.domain_rand.push_robots = False
-    env_cfg.viewer.lookat = [1.2,0,0.2]
-    env_cfg.viewer.pos = [1.2,-2,0.6]
+    # env_cfg.viewer.lookat = [1.2,0,0.2]
+    # env_cfg.viewer.pos = [1.2,-2,0.6]
     # prepare environment
     env, _ = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
     obs = env.get_observations()
@@ -72,20 +72,27 @@ def play(args):
     stop_state_log = 100 # number of steps before plotting states
     stop_rew_log = env.max_episode_length + 1 # number of steps before print average episode rewards
     camera_position = np.array(env_cfg.viewer.pos, dtype=np.float64)
-    camera_vel = np.array([1., 1., 0.])
+    camera_vel = np.array([0.5, 0., 0.])
     camera_direction = np.array(env_cfg.viewer.lookat) - np.array(env_cfg.viewer.pos)
     img_idx = 0
 
     #### Code to plot weights
-    fig, (ax, ax1) = plt.subplots(2,1)
+    # fig, (ax, ax1) = plt.subplots(2,1)
+    fig, ax = plt.subplots(1,1)
+    fig.set_size_inches(2, 2, forward=True)
+    fig.canvas.set_window_title('Relative weight')
     # ax.set_aspect('equal')
     # ax.hold(True)
     # plt.show(False)
     plt.draw()
-    num_skills = len(train_cfg.runner.skill_paths)
-    chart = ax.bar(range(num_skills), [1.0]*num_skills)
+    # skills = train_cfg.policy.skill_compositions.keys()
+    skills = ["walking","residual"]
+    num_skills = len(train_cfg.runner.skill_paths)+1
+    chart = ax.bar(skills, [1.0]*num_skills)
+    # time.sleep(5)
     weights_list = []
     for i in range(10*int(env.max_episode_length)):
+        # time.sleep(0.01)
         actions = policy(obs.detach())
         # print(ppo_runner.alg.actor_critic.visualize_weights)
         
@@ -94,8 +101,8 @@ def play(args):
             rect.set_height(weight)
         weights_list.append(ppo_runner.alg.actor_critic.visualize_weights[0])
         # chart.set_data([1,2], ppo_runner.alg.actor_critic.visualize_weights)
-        fig.canvas.draw()
-        plt.pause(0.0001)
+        # fig.canvas.draw()
+        # plt.pause(0.0001)
         
         obs, _, rews, dones, infos = env.step(actions.detach())
         if dones[0] == True:
@@ -114,7 +121,7 @@ def play(args):
             env.set_camera(camera_position, camera_position + camera_direction)
 
 if __name__ == '__main__':
-    EXPORT_POLICY = True
+    EXPORT_POLICY = False
     RECORD_FRAMES = False
     MOVE_CAMERA = False
     args = get_args()

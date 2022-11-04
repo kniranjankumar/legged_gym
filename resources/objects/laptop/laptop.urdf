@@ -1,0 +1,37 @@
+<robot name="9996" version="1.0">
+  <link name="link_0">
+    <visual name="link_0___1">
+      <origin rpy="0.0 0.0 0.0" xyz="-0.5328969218391331 -0.14447633471213955 -0.22069949215576265" />
+      <geometry>
+        <mesh filename="shape/visual/link_0_m1_vm.obj" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="-0.5328969218391331 -0.14447633471213955 -0.22069949215576265" />
+      <geometry>
+        <mesh filename="shape/collision/link_0_cm.obj" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="base_link">
+    <visual name="link_1___1">
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0" />
+      <geometry>
+        <mesh filename="shape/visual/link_1_m1_vm.obj" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.0 0.0" />
+      <geometry>
+        <mesh filename="shape/collision/link_1_cm.obj" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="joint_0" type="revolute">
+    <origin rpy="0.0 0.0 0.0" xyz="0.5328969218391331 0.18027012176360718 -0.19257299999999988" />
+    <axis xyz="-1 -0.0 0.0" />
+    <parent link="base_link" />
+    <child link="link_0" />
+    <limit lower="1.54504353881396583" upper="3.1028323000830067" />
+  </joint>
+</robot>

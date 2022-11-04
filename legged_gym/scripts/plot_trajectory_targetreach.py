@@ -72,7 +72,7 @@ def play(args):
     stop_state_log = 100 # number of steps before plotting states
     stop_rew_log = env.max_episode_length + 1 # number of steps before print average episode rewards
     camera_position = np.array(env_cfg.viewer.pos, dtype=np.float64)
-    camera_vel = np.array([1., 1., 0.])
+    camera_vel = np.array([1., 0., 0.])
     camera_direction = np.array(env_cfg.viewer.lookat) - np.array(env_cfg.viewer.pos)
     img_idx = 0
 
@@ -103,8 +103,8 @@ def play(args):
             rect.set_height(weight)
         weights_list.append(ppo_runner.alg.actor_critic.visualize_weights[0])
         # chart.set_data([1,2], ppo_runner.alg.actor_critic.visualize_weights)
-        fig.canvas.draw()
-        plt.pause(0.0001)
+        # fig.canvas.draw()
+        # plt.pause(0.0001)
         
         obs, _, rews, dones, infos = env.step(actions.detach())
         dones_tracker = np.logical_or(dones_tracker, dones.detach().cpu().numpy())

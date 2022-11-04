@@ -105,6 +105,10 @@
         <mesh filename="shape/visual/link_2_m1_vm.obj"/>
       </geometry>
     </visual>
+    <!-- <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="10.85"/>
+    </inertial> -->
     <visual name="link_2___2">
       <origin rpy="0.0 0.0 0.0" xyz="-0.37034833274488377 0.0017434567958520795 -0.8958240151405333"/>
       <geometry>

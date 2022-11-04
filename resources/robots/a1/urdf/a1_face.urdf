@@ -585,12 +585,34 @@
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.001"/>
     </inertial>
-
-  </link>    
+  </link>
+    <!-- <link name="lidar">
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.07 0.07 0.09"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.07 0.07 0.09"/>
+      </geometry>
+    </visual>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="2.85"/>
+    </inertial>
+  </link>     -->
   <joint name="face_fixed" type="fixed" dont_collapse="true">
     <origin rpy="0 0 0" xyz="0.25 0 0"/>
     <parent link="trunk"/>
     <child link="face"/>
   </joint>
+  <!-- <joint name="lidar_fixed" type="fixed" dont_collapse="true">
+    <origin rpy="0 0 0" xyz="0.17 0 0.10"/>
+    <parent link="trunk"/>
+    <child link="lidar"/>
+  </joint> -->
 </robot>
 

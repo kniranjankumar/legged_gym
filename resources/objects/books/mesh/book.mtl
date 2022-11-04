@@ -1,0 +1,68 @@
+# Blender MTL File: 'book.blend'
+# Material Count: 6
+
+newmtl 01d45313565789.560352866d6c5.003
+Ns 306.250010
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:\\Users\\gaute\\OneDrive\\Skrivebord\\01d45313565789.560352866d6c5.jpg
+map_d C:\\Users\\gaute\\OneDrive\\Skrivebord\\01d45313565789.560352866d6c5.jpg
+
+newmtl 194763_5104798_878420_image.001
+Ns 410.062514
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:\\Users\\gaute\\OneDrive\\Skrivebord\\194763_5104798_878420_image.jpg
+map_d C:\\Users\\gaute\\OneDrive\\Skrivebord\\194763_5104798_878420_image.jpg
+
+newmtl Material.027
+Ns 20.249994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl Material.028
+Ns 9.000004
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl Material.029
+Ns 20.249994
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl TheOldOrchard_FullCover_©Carys-ink.001
+Ns 440.999985
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd C:\\Users\\gaute\\OneDrive\\Skrivebord\\TheOldOrchard_FullCover_©Carys-ink.png
+map_d C:\\Users\\gaute\\OneDrive\\Skrivebord\\TheOldOrchard_FullCover_©Carys-ink.png

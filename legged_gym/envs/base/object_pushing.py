@@ -132,10 +132,12 @@ class PushingRobot(LeggedRobot):
         cube_asset_options = gymapi.AssetOptions()
         puck_asset_options = gymapi.AssetOptions()
         puck_asset_options.density = 0.5
+        
         # cube_asset_options.density = 0.01
         
         cube_asset = self.gym.load_asset(self.sim, asset_root, asset_file, cube_asset_options)
         puck_asset = self.gym.load_asset(self.sim, asset_root, puck_asset_file, puck_asset_options)
+        puck_rigid_shape_props_asset = self.gym.get_asset_rigid_shape_properties(puck_asset)
         print("loaded 📦 asset")
         cube_pose = gymapi.Transform()
         cube_pose.r = gymapi.Quat(0, 0, 0, 1)
@@ -168,6 +170,8 @@ class PushingRobot(LeggedRobot):
             start_pose.p = gymapi.Vec3(*pos)
             rigid_shape_props = self._process_rigid_shape_props(rigid_shape_props_asset, i)
             self.gym.set_asset_rigid_shape_properties(robot_asset, rigid_shape_props)
+            puck_rigid_shape_props = self._process_rigid_shape_props(puck_rigid_shape_props_asset, i)
+            self.gym.set_asset_rigid_shape_properties(puck_asset, puck_rigid_shape_props)
             actor_handle = self.gym.create_actor(env_handle, robot_asset, start_pose, self.cfg.asset.name, i, self.cfg.asset.self_collisions, 0)
             # self.gym.set_asset_rigid_shape_properties(cube_asset, rigid_shape_props)
 
@@ -324,3 +328,32 @@ class PushingRobot(LeggedRobot):
         # print(rew[0])
         return rew
     
+    def _reward_object_robot_dist(self,):
+        
+        target_distance = torch.clip(torch.norm(self.agent_relative_cube_pos[:,:2], dim=1), 0)
+        rew = torch.exp(-target_distance/2)
+        # print(rew[0])
+        return rew
+    
+    def reset_idx(self, env_ids):        
+        if len(env_ids) != 0:
+            # success = (self.root_states[env_ids, 0]>(self.env_origins[env_ids,0]+4)).type(torch.float32)
+            if hasattr(self, 'agent_relative_target_pos'):
+                # success = torch.logical_or(torch.norm(self.agent_relative_target_pos[env_ids,:2], dim=1) < 0.5, self.episode_length_buf[env_ids] < 50)
+                # print(self.agent_relative_door_pos[torch.logical_not(success),:2])
+                # success = self.success[env_ids]
+                success = torch.norm(self.cube_relative_target_pos[env_ids,:2], dim=1) < 0.5
+                not_messy_init = self.episode_length_buf[env_ids] > 50
+                not_messy_init = not_messy_init | success
+                success = torch.masked_select(success, not_messy_init)
+                # failed_envs = torch.stack([torch.masked_select(self.target_states[:,0],self.success),
+                #                               torch.masked_select(self.target_states[:,1],self.success)], dim=1)
+                # if failed_envs.size(0)>0:
+                #     self.failed_envs = failed_envs
+                # print(self.failed_envs.size())
+            else:
+                success = torch.zeros_like(env_ids, device=self.device).type(torch.float32)
+            # print(success)
+        super().reset_idx(env_ids)
+        if len(env_ids) != 0:
+            self.extras["episode"]["success"] = success

@@ -38,6 +38,13 @@ class StraightWalkingRobot(LeggedRobot):
             self.obs_buf += (2 * torch.rand_like(self.obs_buf) - 1) * self.noise_scale_vec
         # print(self.scaled_dof_vel[0,:])
         # print(self.p_gains, self.d_gains)
+    
+    # def step(self, actions):
+    #     clip_actions = self.cfg.normalization.clip_actions
+    #     actions = torch.clip(actions, -clip_actions, clip_actions).to(self.device)
+    #     diff = torch.clip(self.actions-actions,-0.5,0.5)
+    #     actions = self.actions-diff
+    #     return super().step(actions)
         
     def reset_idx(self, env_ids):
         super().reset_idx(env_ids)

@@ -2,7 +2,7 @@
 <robot name="object">
   <link name="object">
     <visual>
-      <origin xyz="0 0 0"/>
+      <origin xyz="0 0 -0.04" rpy="0 0 -1.57"/>
       <geometry>
         <mesh filename="mesh/couch_lowpoly.obj"/>
       </geometry>

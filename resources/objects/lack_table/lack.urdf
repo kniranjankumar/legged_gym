@@ -18,4 +18,26 @@
       <inertia ixx="0.2" ixy="0.0" ixz="0.0" iyy="0.2" iyz="0.0" izz="0.2"/>
     </inertial>
   </link>
+  <link name="top">
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+      <mass value="0.0"/>
+      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
+    </inertial>
+    <visual name="">
+      <origin xyz="1.0 1.0 0.1" rpy="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.0 0.0 0.0"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.6 0.2 0.2 1.0"/>
+        <texture filename=""/>
+      </material>
+    </visual>
+  </link>
+  <joint name="top_fixed" type="fixed" dont_collapse="true">
+    <origin rpy="0 0 0" xyz="0.0 0 0.2"/>
+    <parent link="object"/>
+    <child link="top"/>
+  </joint>
 </robot>
