@@ -120,21 +120,21 @@ class LeggedRobotCfg(BaseConfig):
 
     class domain_rand:
         # sim parameters
-        # randomize_friction = True
-        # friction_range = [0.5, 1.25]
-        # randomize_base_mass = False
-        # added_mass_range = [-1., 1.]
-        # push_robots = True
-        # push_interval_s = 15
-        # max_push_vel_xy = 1.
-        # real robot policy parameters
         randomize_friction = True
-        friction_range = [0.5, 2.75]
-        randomize_base_mass = True
+        friction_range = [0.5, 1.25]
+        randomize_base_mass = False
         added_mass_range = [-1., 1.]
         push_robots = True
-        push_interval_s = 1 #15
-        max_push_vel_xy = 1
+        push_interval_s = 15
+        max_push_vel_xy = 1.
+        # real robot policy parameters
+        # randomize_friction = True
+        # friction_range = [0.5, 2.75]
+        # randomize_base_mass = True
+        # added_mass_range = [-1., 3.]
+        # push_robots = True
+        # push_interval_s = 15 #15
+        # max_push_vel_xy = 1
 
     class rewards:
         class scales:
@@ -187,7 +187,7 @@ class LeggedRobotCfg(BaseConfig):
     class viewer:
         ref_env = 0
         pos = [10, 0, 6]  # [m]
-        lookat = [11., 5, 3.]  # [m]
+        lookat = [11., 5, 3.]  # [m]\
 
     class sim:
         dt =  0.005

@@ -411,8 +411,8 @@ class InteractiveRobot(LeggedRobot):
             # x = x*0+6
             # y = y*0+2.5
             
-            self.target_states[env_ids,0] = x
-            self.target_states[env_ids,1] = y
+            self.target_states[env_ids,0] = x#[env_ids]
+            self.target_states[env_ids,1] = y#[env_ids]
             self.target_states[env_ids, :3] += self.env_origins[env_ids]
 
             actor_ids = torch.flatten(torch.linspace(0, self.num_actors*self.num_envs-1,self.num_envs*self.num_actors,device=self.device).reshape(self.num_envs,self.num_actors)[env_ids])
@@ -456,6 +456,7 @@ class InteractiveRobot(LeggedRobot):
         self.render()
         for _ in range(self.cfg.control.decimation):
             self.torques = self._compute_torques(self.actions).view(self.torques.shape)
+            # print(torch.norm(self.torques,dim=1).tolist()[0])
             self.all_actor_torques = torch.nn.functional.pad(self.torques,(0,sum(self.actor_dofs)-12),"constant",1)
             self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.all_actor_torques))
             self.gym.simulate(self.sim)
@@ -527,6 +528,10 @@ class InteractiveRobot(LeggedRobot):
     def generate_target_location(self, num_candidates):
         x = torch.rand(num_candidates, device=self.device)*10-3
         y = torch.rand(num_candidates, device=self.device)*4.8-2.4
+        # xs = torch.tensor([-3, -2.0, -1, 0, 1, 3, 4, 5, 6,7], device=self.device)
+        # ys = torch.tensor([-2.0, -1, 0, 1, 2], device=self.device)
+        # x, y = torch.meshgrid(xs, ys, indexing='xy')
+        # print(x.size())
         # x = torch.rand(num_candidates, device=self.device)*0-1.0
         # y = torch.rand(num_candidates, device=self.device)*4.8*0 +2.2
         if self.failed_envs.size(0)>0 and False:
@@ -540,7 +545,8 @@ class InteractiveRobot(LeggedRobot):
         # if torch.rand(1)<0.99:
         #     x = x*0+2
         #     y = y*0
-        return x,y    
+        return x,y
+        # return x.reshape(-1),y.reshape(-1)    
     
     def get_relative_translation(self, transform1, transform2):
         """_summary_
@@ -610,6 +616,7 @@ class InteractiveRobot(LeggedRobot):
                 # print(self.failed_envs.size())
             else:
                 success = torch.zeros_like(env_ids, device=self.device).type(torch.float32)
+        # self.success = success
             # print(success)
         super().reset_idx(env_ids)
         if len(env_ids) != 0:
@@ -649,4 +656,4 @@ class InteractiveRobot(LeggedRobot):
 
     def check_termination(self):
         super().check_termination()
-        # self.reset_buf |= self.success 
+        # self.reset_buf |= torch.norm(self.agent_relative_target_pos[:,:2], dim=1) < 0.1

@@ -4,7 +4,7 @@
     <visual>
       <origin xyz="0 0 -0.04" rpy="0 0 -1.57"/>
       <geometry>
-        <mesh filename="mesh/couch_lowpoly.obj"/>
+        <mesh filename="mesh/couch_tex.obj"/>
       </geometry>
     </visual>
     <collision>

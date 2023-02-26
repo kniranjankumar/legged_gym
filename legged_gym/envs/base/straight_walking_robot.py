@@ -16,6 +16,7 @@ class StraightWalkingRobot(LeggedRobot):
         self.observation_types = ["scaled_base_lin_vel",
                                   "scaled_base_ang_vel",
                                   "projected_gravity",
+                                #   "filler",
                                   "relative_dof",
                                   "scaled_dof_vel",
                                   "actions"]
@@ -31,6 +32,7 @@ class StraightWalkingRobot(LeggedRobot):
         self.scaled_base_ang_vel = self.base_ang_vel  * self.obs_scales.ang_vel
         self.relative_dof = (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos
         self.scaled_dof_vel = self.dof_vel * self.obs_scales.dof_vel
+        # self.filler = torch.zeros_like(self.scaled_base_lin_vel)[:,:-1]
         obs_list = [self.__getattribute__(obs_name) for obs_name in self.observation_types]
         self.obs_buf = torch.cat(obs_list, dim=-1)
         # print(self.projected_gravity[0,:])
