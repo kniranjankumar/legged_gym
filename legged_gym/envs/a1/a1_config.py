@@ -133,7 +133,8 @@ class A1FlatCfgPPO( LeggedRobotCfgPPO ):
         # load_run = "Feb21_11-06-38_"
         # load_run = "Feb21_13-24-20_"
         # load_run = "Jun21_17-35-58_"
-        load_run = "Feb15_21-05-21_"
+        load_run = "Feb15_21-05-21_" # high gain walk 60, 1.5, with +=30 and +=1 DR
+        # load_run = "Feb26_13-18-29_"
         # load_run = "Feb16_18-27-04_"
         # load_run = "Feb06_22-57-37_"
         # load_run = "Feb05_19-08-21_"
@@ -156,7 +157,7 @@ class A1FlatCfgPPO( LeggedRobotCfgPPO ):
         # load_run = "Aug19_10-58-19_"
         # load_run = "Sep26_16-45-50_"
         resume = True
-        # checkpoint = 1500
+        checkpoint = 1500
 class A1FlatCfg( A1RoughCfg):
 
     class asset( A1RoughCfg.asset ):
@@ -164,7 +165,7 @@ class A1FlatCfg( A1RoughCfg):
         name = "a1"
         terminate_after_contacts_on = ["face","base", "FL_hip", "FR_hip", "RL_hip", "RR_hip"]
         # penalize_contacts_on = ["face"]
-        self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
+        self_collisions = 0 # 1 to disable, 0 to enable...bitwise filter
         
     class terrain( A1RoughCfg.terrain ):
         mesh_type = 'plane'
@@ -210,7 +211,7 @@ class A1FlatCfg( A1RoughCfg):
             dof_pos_limits = -10.0
             # feet_contact_forces=-1
     class commands:
-        curriculum = False
+        curriculum = True
         max_curriculum = 5.
         num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 10. # time before command are changed[s]
