@@ -167,7 +167,7 @@ class A1FlatCfg( A1RoughCfg):
         self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
         
     class terrain( A1RoughCfg.terrain ):
-        # mesh_type = 'plane'
+        mesh_type = 'plane'
         measure_heights = False
         terrain_proportions = [0.5, 0.5, 0., 0., 0.]
         
