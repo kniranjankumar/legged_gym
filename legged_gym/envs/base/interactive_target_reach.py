@@ -48,56 +48,56 @@ class InteractiveRobot(LeggedRobot):
                         },
                         
                         # decor
-                        {"path":"objects/books/books.urdf",
-                         "pos":[-1,0,0.45],
-                         "quat":[0,0,0,1],
-                         "scale":1
-                        },
-                        {"path":"objects/TV/TV.urdf",
-                         "pos":[-1,-2.7,0.9],
-                         "quat":[0,0,1, 0],
-                         "scale":0.6
-                        },
-                        {"path":"objects/picture/picture.urdf",
-                         "pos":[-3.9,0,1.2],
-                         "quat":[0,0,0.7071068, 0.7071068],
-                         "scale":0.5
-                        },
-                        {"path":"objects/floor_lamp/floor_lamp.urdf",
-                         "pos":[-2.9,2,1.2],
-                         "quat":[0,0,0.7071068, 0.7071068],
-                         "scale":1.0
-                        },
-                        {"path":"objects/speaker/speaker.urdf",
-                         "pos":[-2.0,-2.8,0],
-                         "quat":[0,0,1,0],
-                         "scale":1.0
-                        },
-                        {"path":"objects/speaker/speaker.urdf",
-                         "pos":[0.0,-2.8,0],
-                         "quat":[0,0,1,0],
-                         "scale":1.0
-                        },
-                        {"path":"objects/shelf/shelf.urdf",
-                         "pos":[5.0,-2.7,0.9],
-                         "quat":[0,0,1,0],
-                         "scale":2.0
-                        },       
-                        {"path":"objects/laptop/laptop.urdf",
-                         "pos":[7.0,0.1,0.53],
-                         "quat":[0,0,-0.7071068, 0.7071068],
-                         "scale":0.3
-                        },
-                        {"path":"objects/guitar/guitar.urdf",
-                         "pos":[7.8,-2.75,0.6],
-                         "quat":[0.0,0.2,-0.7071068, 0.7071068],
-                         "scale":1.0
-                        },
-                        {"path":"objects/floor_lamp2/floor_lamp2.urdf",
-                         "pos":[7.2,1.2,0.9],
-                         "quat":[0,0,0,1],
-                         "scale":1.0
-                        }
+                        # {"path":"objects/books/books.urdf",
+                        #  "pos":[-1,0,0.45],
+                        #  "quat":[0,0,0,1],
+                        #  "scale":1
+                        # },
+                        # {"path":"objects/TV/TV.urdf",
+                        #  "pos":[-1,-2.7,0.9],
+                        #  "quat":[0,0,1, 0],
+                        #  "scale":0.6
+                        # },
+                        # {"path":"objects/picture/picture.urdf",
+                        #  "pos":[-3.9,0,1.2],
+                        #  "quat":[0,0,0.7071068, 0.7071068],
+                        #  "scale":0.5
+                        # },
+                        # {"path":"objects/floor_lamp/floor_lamp.urdf",
+                        #  "pos":[-2.9,2,1.2],
+                        #  "quat":[0,0,0.7071068, 0.7071068],
+                        #  "scale":1.0
+                        # },
+                        # {"path":"objects/speaker/speaker.urdf",
+                        #  "pos":[-2.0,-2.8,0],
+                        #  "quat":[0,0,1,0],
+                        #  "scale":1.0
+                        # },
+                        # {"path":"objects/speaker/speaker.urdf",
+                        #  "pos":[0.0,-2.8,0],
+                        #  "quat":[0,0,1,0],
+                        #  "scale":1.0
+                        # },
+                        # {"path":"objects/shelf/shelf.urdf",
+                        #  "pos":[5.0,-2.7,0.9],
+                        #  "quat":[0,0,1,0],
+                        #  "scale":2.0
+                        # },       
+                        # {"path":"objects/laptop/laptop.urdf",
+                        #  "pos":[7.0,0.1,0.53],
+                        #  "quat":[0,0,-0.7071068, 0.7071068],
+                        #  "scale":0.3
+                        # },
+                        # {"path":"objects/guitar/guitar.urdf",
+                        #  "pos":[7.8,-2.75,0.6],
+                        #  "quat":[0.0,0.2,-0.7071068, 0.7071068],
+                        #  "scale":1.0
+                        # },
+                        # {"path":"objects/floor_lamp2/floor_lamp2.urdf",
+                        #  "pos":[7.2,1.2,0.9],
+                        #  "quat":[0,0,0,1],
+                        #  "scale":1.0
+                        # }
                         ]
         self.asset_paths = [item["path"] for item in self.objects]
         self.asset_offsets = [item["pos"] for item in self.objects]
@@ -609,6 +609,8 @@ class InteractiveRobot(LeggedRobot):
                 not_messy_init = self.episode_length_buf[env_ids] > 50
                 not_messy_init = not_messy_init | success
                 success = torch.masked_select(success, not_messy_init)
+                print("failed", env_ids, success)      
+                
                 # failed_envs = torch.stack([torch.masked_select(self.target_states[:,0],self.success),
                 #                               torch.masked_select(self.target_states[:,1],self.success)], dim=1)
                 # if failed_envs.size(0)>0:

@@ -43,7 +43,7 @@ import torch
 def play(args):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
     # override some parameters for testing
-    env_cfg.env.num_envs = min(env_cfg.env.num_envs, 50)
+    env_cfg.env.num_envs = min(env_cfg.env.num_envs, 100)
     # env_cfg.terrain.num_rows = 5
     # env_cfg.terrain.num_cols = 5
     # env_cfg.terrain.curriculum = True
@@ -85,7 +85,7 @@ def play(args):
     num_skills = len(train_cfg.runner.skill_paths)
     chart = ax.bar(range(num_skills+1), [1.0]*(num_skills+1))
     weights_list = []
-    for i in range(10*int(env.max_episode_length)):
+    for i in range(int(env.max_episode_length)):
         actions = policy(obs.detach())
         # print(ppo_runner.alg.actor_critic.visualize_weights)
         
@@ -112,7 +112,7 @@ def play(args):
         if MOVE_CAMERA:
             camera_position += camera_vel * env.dt
             env.set_camera(camera_position, camera_position + camera_direction)
-
+    print(done)
 if __name__ == '__main__':
     EXPORT_POLICY = True
     RECORD_FRAMES = False

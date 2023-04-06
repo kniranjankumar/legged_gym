@@ -42,6 +42,7 @@ from .base.visual_explorer import VisualRobot
 from .base.crouching_robot import CrouchingRobot
 from .base.interactive_target_reach import  InteractiveRobot
 from .base.interactive_target_reachv2 import  InteractiveRobotv2
+from .base.two_leg_balance_robot import TwoLegBalanceRobot
 from .anymal_c.anymal import Anymal
 from .anymal_c.mixed_terrains.anymal_c_rough_config import AnymalCRoughCfg, AnymalCRoughCfgPPO
 from .anymal_c.flat.anymal_c_flat_config import AnymalCFlatCfg, AnymalCFlatCfgPPO
@@ -74,3 +75,5 @@ task_registry.register( "crouching", CrouchingRobot, A1CrouchingCfg(), A1Crouchi
 task_registry.register("interactive_targetreach", InteractiveRobot, InteractiveTargetReachCfg(), InteractiveTargetReachCfgPPO())
 task_registry.register("interactive_targetreachv2", InteractiveRobotv2, InteractiveTargetReachv2Cfg(), InteractiveTargetReachv2CfgPPO())
 task_registry.register("interactive_targetreachv3", InteractiveRobot, InteractiveTargetReachv3Cfg(), InteractiveTargetReachv3CfgPPO())
+
+task_registry.register("two_leg_balance", TwoLegBalanceRobot, TwoLegBalanceCfg(), TwoLegBalanceCfgPPO())

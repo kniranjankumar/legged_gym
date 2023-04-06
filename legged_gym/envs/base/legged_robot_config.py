@@ -123,17 +123,25 @@ class LeggedRobotCfg(BaseConfig):
         randomize_friction = True
         friction_range = [0.5, 1.25]
         randomize_base_mass = False
-        added_mass_range = [-1., 1.]
+        added_mass_range = [2., 5.0]
         push_robots = True
         push_interval_s = 15
         max_push_vel_xy = 1.
+        # Pushing finetuning
+        # randomize_friction = True
+        # friction_range = [0.5, 1.25]
+        # randomize_base_mass = True
+        # added_mass_range = [2., 5.0]
+        # push_robots = True
+        # push_interval_s = 5
+        # max_push_vel_xy = 1.
         # real robot policy parameters
         # randomize_friction = True
         # friction_range = [0.5, 2.75]
         # randomize_base_mass = True
         # added_mass_range = [-1., 3.]
         # push_robots = True
-        # push_interval_s = 15 #15
+        # push_interval_s = 25 #15
         # max_push_vel_xy = 1
 
     class rewards:

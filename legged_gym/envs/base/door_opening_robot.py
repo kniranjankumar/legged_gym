@@ -175,7 +175,7 @@ class DoorOpeningRobot(LeggedRobot):
         # igibson_asset_options.collapse_fixed_joints = self.cfg.asset.collapse_fixed_joints
         # igibson_asset_options.replace_cylinder_with_capsule = self.cfg.asset.replace_cylinder_with_capsule
         # igibson_asset_options.flip_visual_attachments = self.cfg.asset.flip_visual_attachments
-        igibson_asset_options.density = 10.0
+        igibson_asset_options.density = 30.0
         # igibson_asset_options.convex_decomposition_from_submeshes = True
         # igibson_asset_options.angular_damping = self.cfg.asset.angular_damping
         # igibson_asset_options.linear_damping = self.cfg.asset.linear_damping
@@ -246,9 +246,9 @@ class DoorOpeningRobot(LeggedRobot):
                 # self.gym.set_actor_scale(env_handle,object_handle, 1.1)
                 props = self.gym.get_actor_dof_properties(env_handle, object_handle)
                 props["driveMode"].fill(gymapi.DOF_MODE_NONE)
-                props["stiffness"].fill(5.0)
+                props["stiffness"].fill(0.0)
                 props["damping"].fill(0.0)
-                props["friction"].fill(0.5)
+                props["friction"].fill(0.2)
                 self.gym.set_actor_dof_properties(env_handle, object_handle, props)
         self.actors_with_dofs = [i for i, dof in enumerate(self.actor_dofs) if dof>0]
         self.feet_indices = torch.zeros(len(feet_names), dtype=torch.long, device=self.device, requires_grad=False)
@@ -281,7 +281,7 @@ class DoorOpeningRobot(LeggedRobot):
             else:
                 self.root_states[env_ids] = self.base_init_state
                 self.root_states[env_ids, :3] += self.env_origins[env_ids]
-                self.root_states[env_ids,0] += torch_rand_float(0, 1.6, (len(env_ids),1), device=self.device)[:,0] #randomize distance from door
+                self.root_states[env_ids,0] += torch_rand_float(0+0.8, 1.6*0+0.8, (len(env_ids),1), device=self.device)[:,0] #randomize distance from door
                 # self.root_states[env_ids,1] += torch_rand_float(-0.5, 0.5, (len(env_ids),1), device=self.device)[:,0] #randomize distance from door
                 # orientation_z = torch_rand_float(-np.pi/4, np.pi/4, (len(env_ids),1), device=self.device)[:,0]
                 # self.root_states[env_ids,3:7] = quat_from_euler_xyz(torch.zeros_like(orientation_z), torch.zeros_like(orientation_z),orientation_z)
@@ -310,7 +310,17 @@ class DoorOpeningRobot(LeggedRobot):
             self.gym.set_actor_root_state_tensor_indexed(self.sim,
                                                         gymtorch.unwrap_tensor(self.all_root_states),
                                                               gymtorch.unwrap_tensor(actor_ids_int32), len(actor_ids_int32))
-
+            for env_id in env_ids:
+                body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.object_handles[env_id])
+                # print(body_props)
+                # print(self.gym.get_actor_rigid_body_index(self.envs[env_id], self.object_handles[env_id],"link_2"))
+                # print(self.gym.get_actor_rigid_body_names(self.envs[env_id], self.object_handles[env_id]))
+                
+                # body_props[1].mass = np.random.uniform(0,1)*3+2
+                self.gym.set_actor_rigid_body_properties(self.envs[env_id], self.object_handles[env_id], body_props, recomputeInertia=True)
+                body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.object_handles[env_id])
+                masses = [body.mass for body in body_props]
+                # print(masses)
             # for env_handle in env_idin env_ids:
             #     object_handle = self.object_handles[env_handle]
             #     props = self.gym.get_actor_dof_properties(env_handle, object_handle)
@@ -391,8 +401,8 @@ class DoorOpeningRobot(LeggedRobot):
                                     # self.commands[:, :3] * self.commands_scale,                       #3
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,    #12
                                     self.dof_vel * self.obs_scales.dof_vel,                             #12
-                                    self.actions,
-                                    0*torch.abs(self.objects_dof_states[:,0,0]).view(-1,1)#12
+                                    self.actions
+                                    # 0*torch.abs(self.objects_dof_states[:,0,0]).view(-1,1)#12
                                     ),dim=-1)
         
         # add perceptive inputs if not blind

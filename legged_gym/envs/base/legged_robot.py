@@ -82,13 +82,14 @@ class LeggedRobot(BaseTask):
         Args:
             actions (torch.Tensor): Tensor of shape (num_envs, num_actions_per_env)
         """
-        # print(actions*0.5)
+        # print((0.25*actions[0]).tolist(), ",")
         clip_actions = self.cfg.normalization.clip_actions
         self.actions = torch.clip(actions, -clip_actions, clip_actions).to(self.device)
         # step physics and render each frame
         self.render()
         for _ in range(self.cfg.control.decimation):
             self.torques = self._compute_torques(self.actions).view(self.torques.shape)
+            # print(self.torques[0].tolist())
             # print(torch.norm(self.torques,dim=1).tolist()[8])
             self.gym.set_dof_actuation_force_tensor(self.sim, gymtorch.unwrap_tensor(self.torques))
             self.gym.simulate(self.sim)
@@ -372,7 +373,7 @@ class LeggedRobot(BaseTask):
         # print(actions_scaled[0,:].tolist(),",")
         
         if control_type=="P":
-            torques = (self.p_gains+30*torch_rand_float(-1., 1., (self.num_envs,self.num_actions), device=self.device)) *(actions_scaled + self.default_dof_pos - self.dof_pos) - (self.d_gains+torch_rand_float(-0.5, 0.5, (self.num_envs,self.num_actions), device=self.device))*self.dof_vel
+            torques = (self.p_gains+0*torch_rand_float(-1., 1., (self.num_envs,self.num_actions), device=self.device)) *(actions_scaled + self.default_dof_pos - self.dof_pos) - (self.d_gains+0*torch_rand_float(-0.5, 0.5, (self.num_envs,self.num_actions), device=self.device))*self.dof_vel
         elif control_type=="V":
             torques = self.p_gains*(actions_scaled - self.dof_vel) - self.d_gains*(self.dof_vel - self.last_dof_vel)/self.sim_params.dt
         elif control_type=="T":
@@ -411,6 +412,8 @@ class LeggedRobot(BaseTask):
         else:
             self.root_states[env_ids] = self.base_init_state
             self.root_states[env_ids, :3] += self.env_origins[env_ids]
+            # orientation_z = torch_rand_float(-np.pi, np.pi, (len(env_ids),1), device=self.device)[:,0]*0
+            # self.root_states[env_ids,3:7] = quat_from_euler_xyz(torch.zeros_like(orientation_z), torch.zeros_like(orientation_z),orientation_z)
         # base velocities
         self.root_states[env_ids, 7:13] = torch_rand_float(-0.5, 0.5, (len(env_ids), 6), device=self.device) # [7:10]: lin vel, [10:13]: ang vel
         env_ids_int32 = env_ids.to(dtype=torch.int32)
@@ -457,9 +460,9 @@ class LeggedRobot(BaseTask):
         if torch.mean(self.episode_sums["tracking_lin_vel"][env_ids]) / self.max_episode_length > 0.8 * self.reward_scales["tracking_lin_vel"]:
             self.command_ranges["lin_vel_x"][0] = np.clip(self.command_ranges["lin_vel_x"][0] - 0.5, -self.cfg.commands.max_curriculum, 0.)
             self.command_ranges["lin_vel_x"][1] = np.clip(self.command_ranges["lin_vel_x"][1] + 0.5, 0., self.cfg.commands.max_curriculum)
-            # if self.command_ranges["lin_vel_x"][0]<3.0:
-            #     self.command_ranges["lin_vel_x"][0]+=0.5
-            #     self.command_ranges["lin_vel_x"][1]+=0.5
+            # if self.command_ranges["lin_vel_x"][0]<0.6:
+            #     self.command_ranges["lin_vel_x"][0]+=0.2
+            #     self.command_ranges["lin_vel_x"][1]+=0.2
             # print("==============================Tracking velocity:", self.command_ranges["lin_vel_x"])
 
 
@@ -664,6 +667,7 @@ class LeggedRobot(BaseTask):
         self.num_bodies = len(body_names)
         self.num_dofs = len(self.dof_names)
         feet_names = [s for s in body_names if self.cfg.asset.foot_name in s]
+        print(feet_names)
         penalized_contact_names = []
         for name in self.cfg.asset.penalize_contacts_on:
             penalized_contact_names.extend([s for s in body_names if name in s])

@@ -225,7 +225,7 @@ class TargetReachingRobot(LeggedRobot):
                                                         gymtorch.unwrap_tensor(env_ids_int32), 2*len(env_ids_int32_robot))
 
     def generate_target_location(self, num_candidates):
-        radius = torch.rand(num_candidates, device=self.device)*3.
+        radius = torch.rand(num_candidates, device=self.device)*2.0 +1.0
         # radius = 3.
         random_angle = torch.rand(num_candidates, device=self.device)*2*np.pi #- np.pi/2
         x = radius * torch.sin(random_angle)
@@ -303,14 +303,42 @@ class TargetReachingRobot(LeggedRobot):
         # print(rew[0])
         return rew
     
-    def reset_idx(self, env_ids):
+    # def reset_idx(self, env_ids):
         
         
+    #     if len(env_ids) != 0:
+    #         success = None
+    #         if self.relative_cube_pos != None:
+    #             success = (torch.clip(torch.norm(self.relative_cube_pos[:,:2], dim=1), 0)<0.3).type(torch.float32)
+    #             early_term = self.episode_length_buf < 20
+    #             # print(success)
+    #     super().reset_idx(env_ids)
+    #     if len(env_ids) != 0 and success != None:
+    #         self.extras["episode"]["success"] = success[early_term==False]
+            
+    def reset_idx(self, env_ids):  
         if len(env_ids) != 0:
-            success = None
+            
+            # success = (self.root_states[env_ids, 0]>(self.env_origins[env_ids,0]+4)).type(torch.float32)
             if self.relative_cube_pos != None:
-                success = (torch.clip(torch.norm(self.relative_cube_pos[:,:2], dim=1), 0)<0.3).type(torch.float32)
-                # print(success)
+                # success = torch.logical_or(torch.norm(self.agent_relative_target_pos[env_ids,:2], dim=1) < 0.5, self.episode_length_buf[env_ids] < 50)
+                # print(self.agent_relative_door_pos[torch.logical_not(success),:2])
+                # success = self.success[env_ids]
+                success = torch.norm(self.relative_cube_pos[env_ids,:2], dim=1) < 0.5
+                not_messy_init = self.episode_length_buf[env_ids] > 10
+                not_messy_init = not_messy_init | success
+                success = torch.masked_select(success, not_messy_init)
+                print("failed", env_ids, success)      
+                
+                # failed_envs = torch.stack([torch.masked_select(self.target_states[:,0],self.success),
+                #                               torch.masked_select(self.target_states[:,1],self.success)], dim=1)
+                # if failed_envs.size(0)>0:
+                #     self.failed_envs = failed_envs
+                # print(self.failed_envs.size())
+            else:
+                success = torch.tensor([], device = self.device) #torch.zeros_like(env_ids, device=self.device).type(torch.float32)
+        # self.success = success
+            # print(success)
         super().reset_idx(env_ids)
-        if len(env_ids) != 0 and success != None:
+        if len(env_ids) != 0:
             self.extras["episode"]["success"] = success

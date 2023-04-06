@@ -30,12 +30,12 @@
 
 from legged_gym import LEGGED_GYM_ROOT_DIR
 import os
-
+print("failed", env_ids, success)
 from matplotlib import pyplot as plt
 import isaacgym
 from legged_gym.envs import *
 from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Logger
-
+print("failed", env_ids, success)
 import numpy as np
 import torch
 
@@ -43,7 +43,7 @@ import torch
 def play(args):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
     # override some parameters for testing
-    env_cfg.env.num_envs = min(env_cfg.env.num_envs, 50)
+    env_cfg.env.num_envs = min(env_cfg.env.num_envs, 100)
     # env_cfg.terrain.num_rows = 5
     # env_cfg.terrain.num_cols = 5
     # env_cfg.terrain.curriculum = True
@@ -79,13 +79,18 @@ def play(args):
     #### Code to plot weights
     fig, (ax, ax1) = plt.subplots(2,1)
     # ax.set_aspect('equal')
+    bars = ('Walk', 'Stand', 'Right', 'Left', 'Residual')
     # ax.hold(True)
     # plt.show(False)
     plt.draw()
     num_skills = len(train_cfg.runner.skill_paths)
-    chart = ax.bar(range(num_skills+1), [1.0]*(num_skills+1))
+    chart = ax.bar(bars, [1.0]*(num_skills+1))
+    # ax.xticks(range(num_skills+1), bars)
     weights_list = []
-    for i in range(10*int(env.max_episode_length)):
+    success_count = 0
+    total_count = 0
+    
+    for i in range(int(env.max_episode_length)):
         actions = policy(obs.detach())
         # print(ppo_runner.alg.actor_critic.visualize_weights)
         
@@ -98,6 +103,9 @@ def play(args):
         plt.pause(0.0001)
         
         obs, _, rews, dones, infos = env.step(actions.detach())
+        if "success" in infos["episode"].keys():
+            success_count += torch.sum(infos["episode"]["success"])
+            total_count = infos["episode"]["success"].size()[0]
         if dones[0] == True:
             ax1.clear()
             num_pts2plot = min(len(weights_list)-1, 500)
@@ -112,7 +120,8 @@ def play(args):
         if MOVE_CAMERA:
             camera_position += camera_vel * env.dt
             env.set_camera(camera_position, camera_position + camera_direction)
-
+    print("success/total", success_count, total_count, success_count/total_count,infos["episode"]["success"].size())
+    print(done)
 if __name__ == '__main__':
     EXPORT_POLICY = True
     RECORD_FRAMES = False
