@@ -28,11 +28,14 @@ class TwoLegBalanceRobot(LeggedRobot):
         actor_root_state = self.gym.acquire_actor_root_state_tensor(self.sim)
         dof_state_tensor = self.gym.acquire_dof_state_tensor(self.sim)
         net_contact_forces = self.gym.acquire_net_contact_force_tensor(self.sim)
+        body_states = self.gym.acquire_rigid_body_state_tensor(self.sim)
         self.gym.refresh_dof_state_tensor(self.sim)
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self.gym.refresh_net_contact_force_tensor(self.sim)
-
+        self.gym.refresh_rigid_body_state_tensor(self.sim)
+        
         # create some wrapper tensors for different slices
+        self.rigid_body_states = gymtorch.wrap_tensor(body_states)
         self.all_root_states = gymtorch.wrap_tensor(actor_root_state)
         self.root_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,0,:]
         self.cube_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,1,:]
@@ -40,6 +43,7 @@ class TwoLegBalanceRobot(LeggedRobot):
         self.dof_pos = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 0]
         self.dof_vel = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 1]
         self.base_quat = self.root_states[:, 3:7]
+        self.foot_states = self.rigid_body_states.view(self.num_envs, 1+self.num_bodies, 13)[:,self.feet_indices,:]
 
         self.contact_forces = gymtorch.wrap_tensor(net_contact_forces).view(self.num_envs, -1, 3) # shape: num_envs, num_bodies, xyz axis
 
@@ -189,7 +193,20 @@ class TwoLegBalanceRobot(LeggedRobot):
         for i in range(len(termination_contact_names)):
             self.termination_contact_indices[i] = self.gym.find_actor_rigid_body_handle(self.envs[0], self.actor_handles[0], termination_contact_names[i])
 
-
+    def reset_idx(self, env_ids):
+        for env_id in env_ids:
+            # print(self.actor_handles)
+            body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.actor_handles[env_id])
+            # print([(body_prop.com.x, body_prop.com.y, body_prop.com.z) for body_prop in body_props])
+            # body_props[18].mass = np.random.uniform(0,1)*3 *0 +0.1
+            # body_props[17].mass = (3- body_props[18].mass)*0+0.1
+            # print(self.gym.set_actor_rigid_body_properties(self.envs[env_id], self.actor_handles[env_id], body_props,recomputeInertia=True))
+            body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], 0)
+            # print([body_prop.mass for body_prop in body_props])
+            # print(self.gym.get_actor_rigid_body_names(self.envs[env_id], self.actor_handles[env_id]))
+        self.gym.simulate(self.sim) 
+        super().reset_idx(env_ids)
+        
     def _reset_root_states(self, env_ids):
             """ Resets ROOT states position and velocities of selected environmments
                 Sets base position based on the curriculum
@@ -199,6 +216,13 @@ class TwoLegBalanceRobot(LeggedRobot):
             """
             # if 0 in env_ids:
                 # print("########################################################################")
+            # robot_bodies = ['base', 'FL_hip', 'FL_thigh', 'FL_calf', 'FL_foot', 
+            #                         'FR_hip', 'FR_thigh', 'FR_calf', 'FR_foot', 
+            #                         'RL_hip', 'RL_thigh', 'RL_calf', 'RL_foot', 
+            #                         'RR_hip', 'RR_thigh', 'RR_calf', 'RR_foot', 
+            #                         'back_mass', 'front_mass']
+
+            # print(body_props[0].com)
             if self.custom_origins:
                 self.root_states[env_ids] = self.base_init_state
                 self.root_states[env_ids, :3] += self.env_origins[env_ids]
@@ -223,6 +247,18 @@ class TwoLegBalanceRobot(LeggedRobot):
             self.gym.set_actor_root_state_tensor_indexed(self.sim,
                                                         gymtorch.unwrap_tensor(self.all_root_states),
                                                         gymtorch.unwrap_tensor(env_ids_int32), 2*len(env_ids_int32_robot))
+            # for env_id in env_ids:
+            #     body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.actor_handles[env_id])
+            #     # print(body_props)
+            #     # print(self.gym.get_actor_rigid_body_index(self.envs[env_id], self.object_handles[env_id],"link_2"))
+            #     # print(self.gym.get_actor_rigid_body_names(self.envs[env_id], self.actor_handles[env_id]))
+                
+            #     # body_props[-1].mass = np.random.uniform(0,1)*0.1
+            #     # body_props[-2].mass = np.random.uniform(0,1)*0.1
+            #     self.gym.set_actor_rigid_body_properties(self.envs[env_id], self.actor_handles[env_id], body_props)
+                # body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.object_handles[env_id])
+                # masses = [body.mass for body in body_props]
+
 
     def generate_target_location(self, num_candidates):
         radius = 3.
@@ -277,15 +313,19 @@ class TwoLegBalanceRobot(LeggedRobot):
         agent_orientation = self.root_states[:,3:7]
         q,t = tf_inverse(agent_orientation, agent_pos)
         self.relative_cube_pos = tf_apply(q,t,cube_pos)
+        self.gym.refresh_rigid_body_state_tensor(self.sim)
         # print(cube_pos[0], self.relative_cube_pos[0], t[0])
         super(TwoLegBalanceRobot, self).post_physics_step()
 
-    # def check_termination(self):
-    #     """ Check if environments need to be reset
-    #     """
-    #     self.reset_buf = torch.any(torch.norm(self.contact_forces[:, self.termination_contact_indices, :], dim=-1) > 1., dim=1)
-    #     self.time_out_buf = self.episode_length_buf > self.max_episode_length # no terminal reward for time-outs
-    #     self.reset_buf |= self.time_out_buf
+    def check_termination(self):
+        """ Check if environments need to be reset
+        """
+        super().check_termination()
+        orientation_limit = torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)[0] > 0.2
+        base_height = torch.mean(self.root_states[:, 2].unsqueeze(1) - self.measured_heights, dim=1)
+        # error = torch.square(base_height - self.cfg.rewards.base_height_target)
+        self.reset_buf |= orientation_limit
+        # self.reset_buf |= error > 0.1
     
         
     def _push_robots(self):
@@ -301,6 +341,7 @@ class TwoLegBalanceRobot(LeggedRobot):
     #     # print(rew[0])
     #     return rew
     
+    
     def _reward_foot_contact(self):
         # Penalty if wrong feet touch the ground
         weight = 0.5
@@ -309,5 +350,21 @@ class TwoLegBalanceRobot(LeggedRobot):
         # print((contact_filt[0,1]+ contact_filt[0,2] - contact_filt[0,0] - contact_filt[0,3]))
         return (torch.logical_and(contact_filt[:,1], contact_filt[:,2])).double()*weight
     
+    def _reward_foot_lift(self):
+        # reward for distance from ground
+        weight = 0.5
+        foot_states = self.rigid_body_states.view(self.num_envs, 1+self.num_bodies, 13)[:,self.feet_indices,:]
+        FR_foot_z = foot_states[:,1,2]
+        RL_foot_z = foot_states[:,2,2]
+        # body_states = self.gym.acquire_rigid_body_state_tensor(self.sim)
+        # names = self.gym.get_actor_rigid_body_names(self.envs[0],0)
+        # # foot indices 4, 8, 12, 17
+        # print(names)
+        # print(gymtorch.wrap_tensor(body_states)[self.feet_indices,:])
+        # print(f"FL: {FL_foot_z[0]}, RR: {RR_foot_z[0]}")
+        # return torch.min(torch.vstack((FR_foot_z,RL_foot_z)),1)[0].double()*weight
+        return torch.minimum(FR_foot_z,RL_foot_z).double()*weight
+    
     def _reward_action_magnitude(self):
         return torch.norm(self.actions, p=1, dim=1)
+    

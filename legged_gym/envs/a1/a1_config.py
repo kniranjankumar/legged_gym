@@ -2962,17 +2962,33 @@ class TwoLegBalanceCfgPPO( LeggedRobotCfgPPO ):
         run_name = ''
         experiment_name = 'two_leg_balance'
         policy_class_name = 'SkillActorCritic'     
-        load_run = "Mar27_14-04-36_"
-        load_run = "Mar27_14-58-33_"
-        load_run = "Mar27_16-24-20_"
-        load_run = "Mar27_19-46-48_"
-        load_run = "Mar28_11-38-57_"
-        resume = True
+        load_run = "Apr09_16-49-21_" # standing
+        load_run = "Apr09_18-30-03_" # standing 3 layer 512,256,128
+        load_run = "Apr10_13-00-39_"
+        # load_run = "Apr06_18-00-37_"
+        # load_run = "Mar27_14-58-33_"
+        # load_run = "Mar27_16-24-20_"
+        # load_run = "Mar27_19-46-48_"
+        # load_run = "Mar28_11-38-57_"
+        # load_run = "Apr06_13-52-16_"
+        # load_run = "Apr06_14-50-05_" 
+        # load_run = "Apr07_18-44-25_" 
+        # load_run = "Apr09_15-01-17_"
+        load_run = "Apr10_13-42-23_" # with base height and feet air time terms
+        # load_run = "Apr10_15-15-52_" # started from Apr10_13-42-23_ - successful balancing no DR
+        # load_run ="Apr17_01-33-33_" # started from Apr10_13-42-23_ - successful balancing with mass -1,1 DR
+        # load_run = "Apr17_13-10-02_" # started from Apr10_13-42-23_ - successful balancing with mass [-1,1], friction [0.5, 1.25] DR
+        # load_run = "Apr25_18-15-45_"
+        # load_run = "Apr28_18-23-46_"
+        save_interval = 1000
+        max_iterations = 15000
+        # checkpoint = 500
+        resume = False
         
     class policy:
-        init_noise_std = 0.1
-        actor_hidden_dims = [256, 128]
-        critic_hidden_dims = [256, 128]
+        init_noise_std = 0.001
+        actor_hidden_dims = [512,256, 256, 128]
+        critic_hidden_dims = [512,256, 256,128]
         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
         # only for 'ActorCriticRecurrent':
         # rnn_type = 'lstm'
@@ -2980,14 +2996,50 @@ class TwoLegBalanceCfgPPO( LeggedRobotCfgPPO ):
         # rnn_num_layers = 1
 
 class TwoLegBalanceCfg( A1RoughCfg):
+    class control( LeggedRobotCfg.control ):
+        # PD Drive parameters:
+        control_type = 'P'
+        #for sim
+        # stiffness = {'joint': 20.}  # [N*m/rad]
+        # damping = {'joint': 0.5} 
+        # for real robot
+        stiffness = {'joint': 40.}  # [N*m/rad]
+        damping = {'joint': 1.0}     # [N*m*s/rad]
+        # action scale: target angle = actionScale * action + defaultAngle
+        action_scale = 0.25
+        # decimation: Number of control action updates @ sim DT per policy DT
+        decimation = 4
+    class init_state( A1RoughCfg.init_state ):
+        pos = [0.0, 0.0, 0.38] # x,y,z [m]
+        default_joint_angles = { # = target angles [rad] when action = 0.0
+            'FL_hip_joint': 0.1,   # [rad]
+            'RL_hip_joint': 0.1,   # [rad]
+            'FR_hip_joint': -0.1 ,  # [rad]
+            'RR_hip_joint': -0.1,   # [rad]
+
+            'FL_thigh_joint': 0.7,     # [rad]
+            'RL_thigh_joint': 0.7,   # [rad]
+            'FR_thigh_joint': 0.7,     # [rad]
+            'RR_thigh_joint': 0.7,   # [rad]
+
+            'FL_calf_joint': -1.4,   # [rad]
+            'RL_calf_joint': -1.4,    # [rad]
+            'FR_calf_joint': -1.4,  # [rad]
+            'RR_calf_joint': -1.4,    # [rad]
+        }
+
     class terrain( A1RoughCfg.terrain ):
         mesh_type = 'plane'
         measure_heights = False
-        
+
+  
+
     class asset( A1RoughCfg.asset ):
-        terminate_after_contacts_on = ["base", "FL_hip", "FR_hip", "RL_hip", "RR_hip"]
+        # file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_mass_shift.urdf'
+        terminate_after_contacts_on = ["base", "FL_hip", "FR_hip", "RL_hip", "RR_hip", "face"]
+        penalize_contacts_on = ["thigh"]
         self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_face.urdf'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1.urdf'
         name = "a1"
     class env(A1RoughCfg.env ):
         num_envs = 4096
@@ -3013,7 +3065,7 @@ class TwoLegBalanceCfg( A1RoughCfg):
     class domain_rand:
         randomize_friction = True
         friction_range = [0.5, 1.25]
-        randomize_base_mass = False
+        randomize_base_mass = True
         added_mass_range = [-1., 1.]
         push_robots = False
         push_interval_s = 1
@@ -3029,7 +3081,7 @@ class TwoLegBalanceCfg( A1RoughCfg):
             orientation = -0.1 -0.4
             dof_vel = -0.
             dof_acc = -2.5e-7
-            base_height = -0.5
+            base_height = -5.5 
             feet_air_time =  3.0
             collision = -1.
             feet_stumble = -0.0 
@@ -3038,6 +3090,7 @@ class TwoLegBalanceCfg( A1RoughCfg):
             torques = -0.0002
             dof_pos_limits = -10.0
             foot_contact = 1.0
+            foot_lift = 10.0
             # action_magnitude= -1.0
             # door_angle = 0.6
             # box_moved = 2.0

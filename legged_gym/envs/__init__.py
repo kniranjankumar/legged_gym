@@ -43,6 +43,7 @@ from .base.crouching_robot import CrouchingRobot
 from .base.interactive_target_reach import  InteractiveRobot
 from .base.interactive_target_reachv2 import  InteractiveRobotv2
 from .base.two_leg_balance_robot import TwoLegBalanceRobot
+from .base.ballu_walk import WalkingBallu
 from .anymal_c.anymal import Anymal
 from .anymal_c.mixed_terrains.anymal_c_rough_config import AnymalCRoughCfg, AnymalCRoughCfgPPO
 from .anymal_c.flat.anymal_c_flat_config import AnymalCFlatCfg, AnymalCFlatCfgPPO
@@ -50,6 +51,7 @@ from .anymal_b.anymal_b_config import AnymalBRoughCfg, AnymalBRoughCfgPPO
 from .cassie.cassie import Cassie
 from .cassie.cassie_config import CassieRoughCfg, CassieRoughCfgPPO
 from .a1.a1_config import * #A1RoughCfg, A1RoughCfgPPO, A1FlatCfg, A1TargetReachCfg, A1FlatCfgPPO, A1MultiSkillCfgPPO, A1MultiSkillReachCfgPPO
+from .ballu.ballu_config import *
 import os
 from legged_gym.utils.task_registry import task_registry
 
@@ -77,3 +79,5 @@ task_registry.register("interactive_targetreachv2", InteractiveRobotv2, Interact
 task_registry.register("interactive_targetreachv3", InteractiveRobot, InteractiveTargetReachv3Cfg(), InteractiveTargetReachv3CfgPPO())
 
 task_registry.register("two_leg_balance", TwoLegBalanceRobot, TwoLegBalanceCfg(), TwoLegBalanceCfgPPO())
+
+task_registry.register( "ballu", WalkingBallu, BalluCfg(), BalluCfgPPO() )

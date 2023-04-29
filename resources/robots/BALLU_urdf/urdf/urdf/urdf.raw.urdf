@@ -1,0 +1,665 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-1-g15f4949  Build Version: 1.6.7594.29634
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="urdf">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.00037819 9.7743E-06 -0.0034155"
+        rpy="0 0 0" />
+      <mass
+        value="0.023056" />
+      <inertia
+        ixx="1.7761E-05"
+        ixy="4.0386E-08"
+        ixz="-6.8641E-09"
+        iyy="1.3959E-06"
+        iyz="8.9078E-09"
+        izz="1.8127E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="PELVIS">
+    <inertial>
+      <origin
+        xyz="-0.00037819 9.7743E-06 -0.0034155"
+        rpy="0 0 0" />
+      <mass
+        value="0.023056" />
+      <inertia
+        ixx="1.7761E-05"
+        ixy="4.0386E-08"
+        ixz="-6.8641E-09"
+        iyy="1.3959E-06"
+        iyz="8.9078E-09"
+        izz="1.8127E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/PELVIS.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/PELVIS.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="floating_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="PELVIS" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="FEMUR_LEFT">
+    <inertial>
+      <origin
+        xyz="-3.7698E-05 0.18369 -2.7803E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.010918" />
+      <inertia
+        ixx="8.5863E-05"
+        ixy="-2.5256E-09"
+        ixz="2.8665E-13"
+        iyy="9.2522E-08"
+        iyz="6.8531E-11"
+        izz="8.5853E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/FEMUR_LEFT.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/FEMUR_LEFT.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="HIP_LEFT"
+    type="revolute">
+    <origin
+      xyz="0 0.058025 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="PELVIS" />
+    <child
+      link="FEMUR_LEFT" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="TIBIA_LEFT">
+    <inertial>
+      <origin
+        xyz="0.0055109 0.22055 -0.0034787"
+        rpy="0 0 0" />
+      <mass
+        value="0.028163" />
+      <inertia
+        ixx="3.0121E-05"
+        ixy="1.791E-07"
+        ixz="4.6609E-08"
+        iyy="1.0967E-06"
+        iyz="-1.2301E-07"
+        izz="3.0714E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/TIBIA_LEFT.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/TIBIA_LEFT.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="KNEE_LEFT"
+    type="revolute">
+    <origin
+      xyz="0 0.36501 0"
+      rpy="0 0 0" />
+    <parent
+      link="FEMUR_LEFT" />
+    <child
+      link="TIBIA_LEFT" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0.47124"
+      upper="0.7854"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="MOTORARM_LEFT">
+    <inertial>
+      <origin
+        xyz="0.0016754 1.3878E-17 -0.0006327"
+        rpy="0 0 0" />
+      <mass
+        value="6.5322E-05" />
+      <inertia
+        ixx="1.6456E-10"
+        ixy="7.5509E-26"
+        ixz="-6.9245E-11"
+        iyy="6.5279E-10"
+        iyz="-6.6696E-27"
+        izz="7.0527E-10" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/MOTORARM_LEFT.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.93725 0.13725 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/MOTORARM_LEFT.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="MOTOR_LEFT"
+    type="revolute">
+    <origin
+      xyz="-0.008375 0.24032 0.001"
+      rpy="-3.1416 0 -1.5708" />
+    <parent
+      link="TIBIA_LEFT" />
+    <child
+      link="MOTORARM_LEFT" />
+    <axis
+      xyz="0 0 -1" />
+    <limit
+      lower="0"
+      upper="3.14"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="FOOT_LEFT">
+    <inertial>
+      <origin
+        xyz="-0.008375 0.0016327 0.055205"
+        rpy="0 0 0" />
+      <mass
+        value="6.5322E-05" />
+      <inertia
+        ixx="6.5279E-10"
+        ixy="-1.2889E-26"
+        ixz="-2.4945E-26"
+        iyy="7.0527E-10"
+        iyz="6.9245E-11"
+        izz="1.6456E-10" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/FOOT_LEFT.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.93725 0.13725 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/FOOT_LEFT.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="ANKLE_LEFT"
+    type="fixed">
+    <origin
+      xyz="0 0.29385 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="TIBIA_LEFT" />
+    <child
+      link="FOOT_LEFT" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="FEMUR_RIGHT">
+    <inertial>
+      <origin
+        xyz="-3.7698417155176E-05 0.183694724928048 -2.78032474747975E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.0109175428490063" />
+      <inertia
+        ixx="8.58632850507049E-05"
+        ixy="-2.52564717448929E-09"
+        ixz="2.86651344393802E-13"
+        iyy="9.2522234164433E-08"
+        iyz="6.85309671757595E-11"
+        izz="8.58532795512158E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/FEMUR_RIGHT.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/FEMUR_RIGHT.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="HIP_RIGHT"
+    type="revolute">
+    <origin
+      xyz="0 -0.058025 0"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="PELVIS" />
+    <child
+      link="FEMUR_RIGHT" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="-1.57"
+      upper="1.57"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="TIBIA_RIGHT">
+    <inertial>
+      <origin
+        xyz="0.00569572176239753 0.220549686905979 0.00347872250064026"
+        rpy="0 0 0" />
+      <mass
+        value="0.0281627066865375" />
+      <inertia
+        ixx="3.01214643574385E-05"
+        ixy="1.79084311402751E-07"
+        ixz="-4.66093865175517E-08"
+        iyy="1.09665215720643E-06"
+        iyz="1.23014999941794E-07"
+        izz="3.07141758038918E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/TIBIA_RIGHT.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/TIBIA_RIGHT.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="KNEE_RIGHT"
+    type="revolute">
+    <origin
+      xyz="0 0.36501 0"
+      rpy="0 0 0" />
+    <parent
+      link="FEMUR_RIGHT" />
+    <child
+      link="TIBIA_RIGHT" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0.47124"
+      upper="0.7854"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="MOTORARM_RIGHT">
+    <inertial>
+      <origin
+        xyz="0.00167544613607395 -2.70616862252382E-16 0.000632703260056822"
+        rpy="0 0 0" />
+      <mass
+        value="6.53220786806276E-05" />
+      <inertia
+        ixx="1.64557530933627E-10"
+        ixy="-4.71494170447285E-26"
+        ixz="6.9245337903352E-11"
+        iyy="6.52787110256909E-10"
+        iyz="1.91747946404733E-27"
+        izz="7.05267640970713E-10" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/MOTORARM_RIGHT.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.937254901960784 0.137254901960784 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/MOTORARM_RIGHT.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="MOTOR_RIGHT"
+    type="revolute">
+    <origin
+      xyz="-0.008375 0.24032 -0.001"
+      rpy="3.1416 0 -1.5708" />
+    <parent
+      link="TIBIA_RIGHT" />
+    <child
+      link="MOTORARM_RIGHT" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="3.14"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="FOOT_RIGHT">
+    <inertial>
+      <origin
+        xyz="-0.00837499999999998 -0.00163270326005471 0.0552054461360738"
+        rpy="0 0 0" />
+      <mass
+        value="6.53220786806276E-05" />
+      <inertia
+        ixx="6.52787110256909E-10"
+        ixy="1.52533182894715E-26"
+        ixz="1.68435607457299E-25"
+        iyy="7.05267640970713E-10"
+        iyz="-6.92453379033502E-11"
+        izz="1.64557530933627E-10" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/FOOT_RIGHT.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0.937254901960784 0.137254901960784 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/FOOT_RIGHT.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="ANKLE_RIGHT"
+    type="fixed">
+    <origin
+      xyz="0 0.29385 0"
+      rpy="1.5707963267949 0 0" />
+    <parent
+      link="TIBIA_RIGHT" />
+    <child
+      link="FOOT_RIGHT" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="BALLOONS">
+    <inertial>
+      <origin
+        xyz="-4.3257E-08 -0.385 -2.7842E-08"
+        rpy="0 0 0" />
+      <mass
+        value="295.56" />
+      <inertia
+        ixx="14.961"
+        ixy="2.4516E-06"
+        ixz="1.0965E-08"
+        iyy="2.2513"
+        iyz="1.7207E-07"
+        izz="14.961" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/BALLOONS.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/BALLOONS.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="NECK"
+    type="revolute">
+    <origin
+      xyz="0.0044439 0 0.015"
+      rpy="-1.5708 0 0" />
+    <parent
+      link="PELVIS" />
+    <child
+      link="BALLOONS" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="BALLOON_COM">
+    <inertial>
+      <origin
+        xyz="-3.4912E-08 -3.7301E-08 -4.6941E-06"
+        rpy="0 0 0" />
+      <mass
+        value="295.56" />
+      <inertia
+        ixx="14.961"
+        ixy="8.9026E-08"
+        ixz="-5.7678E-07"
+        iyy="14.961"
+        iyz="9.3839E-08"
+        izz="2.2513" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/BALLOON_COM.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.75294 0.75294 0.75294 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://urdf/meshes/BALLOON_COM.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="BALLOON_FIXED_LINK"
+    type="fixed">
+    <origin
+      xyz="0 -0.385 0"
+      rpy="1.5707963267949 0 0" />
+    <parent
+      link="BALLOONS" />
+    <child
+      link="BALLOON_COM" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>
