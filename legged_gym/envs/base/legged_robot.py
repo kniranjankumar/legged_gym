@@ -197,6 +197,7 @@ class LeggedRobot(BaseTask):
             adds each terms to the episode sums and to the total reward
         """
         self.rew_buf[:] = 0.
+        # print(self.reward_scales)
         for i in range(len(self.reward_functions)):
             name = self.reward_names[i]
             rew = self.reward_functions[i]() * self.reward_scales[name]
@@ -926,12 +927,12 @@ class LeggedRobot(BaseTask):
     
     def save_config(self, path):
         with open(os.path.join(path,'exp_config.yaml'), 'w') as stream:
-            rew = vars(LeggedRobotCfg.rewards.scales)
+            rew = self.reward_scales
             dump({"base_height_target": self.cfg.rewards.base_height_target},stream)
             # rew["base_height_target"] = self.cfg.rewards.base_height_target
-            dump({k:v for k,v in rew.items() if not "__" in k}, stream)
-            control_range = vars(LeggedRobotCfg.commands.ranges)
-            dump({k:v for k,v in control_range.items() if not "__" in k}, stream)
-            dump({"terrain_proportions":LeggedRobotCfg.terrain.terrain_proportions}, stream)
+            dump({k:v/self.dt for k,v in rew.items() if not "__" in k}, stream)
+            # control_range = self.cfg.commands.ranges
+            # dump({k:v for k,v in control_range.items() if not "__" in k}, stream)
+            dump({"terrain_proportions":self.cfg.terrain.terrain_proportions}, stream)
             # dump()
             

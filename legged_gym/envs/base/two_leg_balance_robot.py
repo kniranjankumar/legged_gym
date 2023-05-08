@@ -193,20 +193,35 @@ class TwoLegBalanceRobot(LeggedRobot):
         for i in range(len(termination_contact_names)):
             self.termination_contact_indices[i] = self.gym.find_actor_rigid_body_handle(self.envs[0], self.actor_handles[0], termination_contact_names[i])
 
-    def reset_idx(self, env_ids):
-        for env_id in env_ids:
-            # print(self.actor_handles)
-            body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.actor_handles[env_id])
-            # print([(body_prop.com.x, body_prop.com.y, body_prop.com.z) for body_prop in body_props])
-            # body_props[18].mass = np.random.uniform(0,1)*3 *0 +0.1
-            # body_props[17].mass = (3- body_props[18].mass)*0+0.1
-            # print(self.gym.set_actor_rigid_body_properties(self.envs[env_id], self.actor_handles[env_id], body_props,recomputeInertia=True))
-            body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], 0)
-            # print([body_prop.mass for body_prop in body_props])
-            # print(self.gym.get_actor_rigid_body_names(self.envs[env_id], self.actor_handles[env_id]))
-        self.gym.simulate(self.sim) 
-        super().reset_idx(env_ids)
-        
+    # def reset_idx(self, env_ids):
+    #     for env_id in env_ids:
+    #         # print(self.actor_handles)
+    #         body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], 0)
+    #         # print([(body_prop.com.x, body_prop.com.y, body_prop.com.z) for body_prop in body_props])
+    #         # body_props[18].mass = np.random.uniform(0,1)*0.+0.001
+    #         # body_props[17].mass = (0.1- body_props[18].mass)*0+0.001
+    #         # print(self.gym.set_actor_rigid_body_properties(self.envs[env_id], self.actor_handles[env_id], body_props,recomputeInertia=True))
+    #         body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], 0)
+    #         # print([body_prop.mass for body_prop in body_props])
+    #         # print(self.gym.get_actor_rigid_body_names(self.envs[env_id], self.actor_handles[env_id]))
+    #     # self.gym.simulate(self.sim) 
+    #     super().reset_idx(env_ids)
+
+    def _process_rigid_body_props(self, props, env_id):
+        # if env_id==0:
+        #     sum = 0
+        #     for i, p in enumerate(props):
+        #         sum += p.mass
+        #         print(f"Mass of body {i}: {p.mass} (before randomization)")
+        #     print(f"Total mass {sum} (before randomization)")
+        # randomize base mass
+        if self.cfg.domain_rand.randomize_base_mass:
+            rng = self.cfg.domain_rand.added_mass_range
+            props[0].mass += np.random.uniform(rng[0], rng[1])
+            # props[18].mass = np.random.uniform(0,1)*0.+0.001
+            # props[17].mass = (0.1- props[18].mass)*0+0.001
+        return props
+    
     def _reset_root_states(self, env_ids):
             """ Resets ROOT states position and velocities of selected environmments
                 Sets base position based on the curriculum
@@ -321,7 +336,7 @@ class TwoLegBalanceRobot(LeggedRobot):
         """ Check if environments need to be reset
         """
         super().check_termination()
-        orientation_limit = torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)[0] > 0.2
+        orientation_limit = torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)[0] > 0.1
         base_height = torch.mean(self.root_states[:, 2].unsqueeze(1) - self.measured_heights, dim=1)
         # error = torch.square(base_height - self.cfg.rewards.base_height_target)
         self.reset_buf |= orientation_limit

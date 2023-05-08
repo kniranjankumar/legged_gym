@@ -133,7 +133,8 @@ class A1FlatCfgPPO( LeggedRobotCfgPPO ):
         # load_run = "Aug19_10-58-19_"
         # load_run = "Sep26_16-45-50_"
         load_run = "Sep26_17-16-44_"
-        resume = True
+        # load_run = "May08_07-29-42_"
+        resume = False
         # checkpoint = 2000
 class A1FlatCfg( A1RoughCfg):
 
@@ -2974,15 +2975,22 @@ class TwoLegBalanceCfgPPO( LeggedRobotCfgPPO ):
         # load_run = "Apr06_14-50-05_" 
         # load_run = "Apr07_18-44-25_" 
         # load_run = "Apr09_15-01-17_"
-        load_run = "Apr10_13-42-23_" # with base height and feet air time terms
+        load_run = "Apr10_13-42-23_" # with base height and feet air time terms and possibly low gain
         # load_run = "Apr10_15-15-52_" # started from Apr10_13-42-23_ - successful balancing no DR
         # load_run ="Apr17_01-33-33_" # started from Apr10_13-42-23_ - successful balancing with mass -1,1 DR
         # load_run = "Apr17_13-10-02_" # started from Apr10_13-42-23_ - successful balancing with mass [-1,1], friction [0.5, 1.25] DR
         # load_run = "Apr25_18-15-45_"
         # load_run = "Apr28_18-23-46_"
+        # load_run = "Apr29_19-22-00_"
+        load_run = "May02_20-25-46_" # standing policy used to warmstart
+        # load_run = "May03_11-41-40_"  # balancing policy with no DR
+        # load_run = "May03_20-45-06_" # balancing policy with mass DR [-1,1]
+        # load_run = "May04_16-32-21_" # balancing policy with mass DR [-1,1] and setting body props
+        # load_run = "May05_17-52-22_" # # standing policy used to warmstart with low gain
+        load_run = "May07_17-36-07_" # # standing policy used to warmstart with low gain
         save_interval = 1000
         max_iterations = 15000
-        # checkpoint = 500
+        checkpoint = 100
         resume = False
         
     class policy:
@@ -3036,10 +3044,10 @@ class TwoLegBalanceCfg( A1RoughCfg):
 
     class asset( A1RoughCfg.asset ):
         # file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_mass_shift.urdf'
-        terminate_after_contacts_on = ["base", "FL_hip", "FR_hip", "RL_hip", "RR_hip", "face"]
+        terminate_after_contacts_on = ["base", "FL_hip", "FR_hip", "RL_hip", "RR_hip", "face"]#,"front_mass","back_mass"]
         penalize_contacts_on = ["thigh"]
         self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1.urdf'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_face.urdf'
         name = "a1"
     class env(A1RoughCfg.env ):
         num_envs = 4096
@@ -3063,9 +3071,10 @@ class TwoLegBalanceCfg( A1RoughCfg):
             heading = [-0, 0]
     
     class domain_rand:
-        randomize_friction = True
+        randomize_friction = False
         friction_range = [0.5, 1.25]
-        randomize_base_mass = True
+        # friction_range = [0.75, 1.0]
+        randomize_base_mass = False
         added_mass_range = [-1., 1.]
         push_robots = False
         push_interval_s = 1
@@ -3081,8 +3090,8 @@ class TwoLegBalanceCfg( A1RoughCfg):
             orientation = -0.1 -0.4
             dof_vel = -0.
             dof_acc = -2.5e-7
-            base_height = -5.5 
-            feet_air_time =  3.0
+            base_height = -5.5
+            feet_air_time =  3.0*0 # this was 0 before 16:44 May 2
             collision = -1.
             feet_stumble = -0.0 
             action_rate = -0.01
@@ -3095,7 +3104,7 @@ class TwoLegBalanceCfg( A1RoughCfg):
             # door_angle = 0.6
             # box_moved = 2.0
 
-        only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
+        only_positive_rewards = False # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
         soft_dof_pos_limit = 0.3 # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 1.
