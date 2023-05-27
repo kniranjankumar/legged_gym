@@ -2988,9 +2988,21 @@ class TwoLegBalanceCfgPPO( LeggedRobotCfgPPO ):
         # load_run = "May04_16-32-21_" # balancing policy with mass DR [-1,1] and setting body props
         # load_run = "May05_17-52-22_" # # standing policy used to warmstart with low gain
         load_run = "May07_17-36-07_" # # standing policy used to warmstart with low gain
+        load_run = "May09_00-00-04_"
+        load_run = "May09_16-07-58_"
+        load_run = "May10_11-08-49_"
+        load_run = "May10_17-17-42_"
+        load_run = "May11_11-02-20_"
+        load_run = "May15_19-33-32_"
+        # load_run = "May20_13-56-03_"
+        load_run = "May21_16-29-35_"
+        load_run = "May20_13-56-03_"
+        load_run = "May23_17-38-31_"
+        # load_run = "May22_18-38-51_"
         save_interval = 1000
-        max_iterations = 15000
-        checkpoint = 100
+        # max_iterations = 15000
+        max_iterations = 10000
+        # checkpoint = 15000
         resume = False
         
     class policy:
@@ -3043,11 +3055,11 @@ class TwoLegBalanceCfg( A1RoughCfg):
   
 
     class asset( A1RoughCfg.asset ):
-        # file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_mass_shift.urdf'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_mass_shift.urdf'
         terminate_after_contacts_on = ["base", "FL_hip", "FR_hip", "RL_hip", "RR_hip", "face"]#,"front_mass","back_mass"]
         penalize_contacts_on = ["thigh"]
         self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_face.urdf'
+        # file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/a1/urdf/a1_face.urdf'
         name = "a1"
     class env(A1RoughCfg.env ):
         num_envs = 4096
@@ -3071,14 +3083,20 @@ class TwoLegBalanceCfg( A1RoughCfg):
             heading = [-0, 0]
     
     class domain_rand:
-        randomize_friction = False
+        randomize_friction = True
         friction_range = [0.5, 1.25]
+        friction_range_stddev = [0.01,0.5]
         # friction_range = [0.75, 1.0]
-        randomize_base_mass = False
+        randomize_base_mass = True
         added_mass_range = [-1., 1.]
-        push_robots = False
+        added_mass_range_stddev = [0.01, 0.5]
+        push_robots = True
         push_interval_s = 1
         max_push_vel_xy = 1.
+        randomize_com = True
+        com_shift_mass_range = [0.1, 2.0]
+        com_shift_mass_range_stddev = [0.01, 0.5]
+        distribution = 'uniform' # uniform, gaussian
     
     class rewards:
         class scales:
@@ -3113,7 +3131,7 @@ class TwoLegBalanceCfg( A1RoughCfg):
         max_contact_force = 100. # forces above this value are penalized
 
     class noise:
-        add_noise = False
+        add_noise = True
         noise_level = 1.0 # scales other values
         class noise_scales:
             dof_pos = 0.01
