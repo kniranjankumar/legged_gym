@@ -221,9 +221,9 @@ class TwoLegBalanceRobot(LeggedRobot):
                                                        self.cfg.domain_rand.added_mass_range_stddev[0], 
                                                        [-1.0,1.0], 
                                                        self.num_envs)
-            self.com_shift_mass = self.sample(self.cfg.domain_rand.com_shift_mass_range[0], 
-                                                       self.cfg.domain_rand.com_shift_mass_range_stddev[0], 
-                                                       [0.1,2], 
+            self.com_shift_mass = self.sample(self.cfg.domain_rand.com_sampled[0], 
+                                                       self.cfg.domain_rand.com_sampled[1], 
+                                                       self.cfg.domain_rand.com_shift_mass_range, 
                                                        self.num_envs)
             # print(self.com_shift_mass, self.cfg.domain_rand.com_shift_mass_range[0], 
             #                                            self.cfg.domain_rand.com_shift_mass_range_stddev[0], 
@@ -240,7 +240,7 @@ class TwoLegBalanceRobot(LeggedRobot):
             #                                    self.cfg.domain_rand.added_mass_range[1])
             # print("com_shift_mass", self.com_shift_mass[env_id])
             props[18].mass = self.com_shift_mass[env_id] 
-            props[17].mass = 2.1- props[18].mass
+            props[17].mass = sum(self.cfg.domain_rand.com_shift_mass_range) - props[18].mass
             # print(props[18].mass, props[17].mass, props[0].mass)
         return props
     
@@ -256,7 +256,7 @@ class TwoLegBalanceRobot(LeggedRobot):
     def sample_truncated_normal(self, loc, scale, bounds, size):
         """ Sample truncated normal distribution"""
         myclip_a, myclip_b = bounds
-        # print(bounds,loc,scale)
+        print(bounds,loc,scale)
         a, b = abs(myclip_a - loc) / scale, abs(myclip_b - loc) / scale
         # print(a,b, loc,scale,size)
         r = truncnorm.rvs(-a, b, loc, scale, size=size)

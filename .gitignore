@@ -53,7 +53,9 @@ Thumbs.db
 # logs
 logs
 runs
+Bayrn
 
 # other
 *.egg-info
 __pycache__
+Bayrn/logs_improved.json

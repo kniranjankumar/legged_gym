@@ -29,7 +29,7 @@
 # Copyright (c) 2021 ETH Zurich, Nikita Rudin
 
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
-
+import numpy as np
 class A1RoughCfg( LeggedRobotCfg ):
     class init_state( LeggedRobotCfg.init_state ):
         pos = [0.0, 0.0, 0.42] # x,y,z [m]
@@ -1291,77 +1291,77 @@ class A1TargetReachCfg( A1FlatCfg):
 ##############################################################################################################        
 ################################        Object pushing       #################################################
 ##############################################################################################################
-class A1MultiSkillObjectPushCfgPPO( LeggedRobotCfgPPO ):
-    class algorithm( LeggedRobotCfgPPO.algorithm ):
-        entropy_coef = 0.01
-        # residual_action_penalty_coef = 0.015
-        # residual_action_penalty_coef = 5 #1.5 #0.05
-        # residual_weight_penalty_coef = 0.01
-        residual_weight_penalty_coef = 0.005*0#*0+0.02#0.09
-        residual_action_penalty_coef = 0.025*0
+# class A1MultiSkillObjectPushCfgPPO( LeggedRobotCfgPPO ):
+#     class algorithm( LeggedRobotCfgPPO.algorithm ):
+#         entropy_coef = 0.01
+#         # residual_action_penalty_coef = 0.015
+#         # residual_action_penalty_coef = 5 #1.5 #0.05
+#         # residual_weight_penalty_coef = 0.01
+#         residual_weight_penalty_coef = 0.005*0#*0+0.02#0.09
+#         residual_action_penalty_coef = 0.025*0
 
-    class policy:
-        init_noise_std = 1.0
-        actor_hidden_dims = [[512, 256, 128], [512, 256,128]]
-        critic_hidden_dims = [512, 256, 128]
-        weight_network_dims = [512,256]
-        activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
+#     class policy:
+#         init_noise_std = 1.0
+#         actor_hidden_dims = [[512, 256, 128], [512, 256,128]]
+#         critic_hidden_dims = [512, 256, 128]
+#         weight_network_dims = [512,256]
+#         activation = 'elu' # can be elu, relu, selu, crelu, lrelu, tanh, sigmoid
         
-    class runner( LeggedRobotCfgPPO.runner ):
-        # run_name = ''
-        checkpoint = 2000
-        # load_run = "Nov02_22-20-21_"
-        # load_run = "Nov02_09-31-03_"
-        # load_run = "Nov02_13-32-38_"
-        # load_run = "Nov02_19-17-17_"
-        # load_run = "Nov02_22-20-21_" #1st real world
-        load_run = "Mar18_16-43-43_"
-        load_run = "Mar19_15-43-07_"
-        # load_run = "Mar19_18-28-25_"
-        load_run = "Mar21_11-01-03_"
-        load_run = "Mar22_14-22-46_"
-        # resume = True
-        algorithm_class_name = 'ResidualPPO'
-        max_iterations = 9000
-        save_interval = 500
-        obs_sizes = {"scaled_base_lin_vel": 3,
-                    "scaled_base_ang_vel": 3,
-                    "projected_gravity": 3,
-                    "target_position": 2,
-                    "object_position": 2,
-                    "relative_dof": 12,
-                    "scaled_dof_vel": 12,
-                    "actions": 12}
-        actor_obs =[["scaled_base_lin_vel",
-                    "scaled_base_ang_vel",
-                    "projected_gravity",
-                    "relative_dof",
-                    "scaled_dof_vel",
-                    "actions"],
+#     class runner( LeggedRobotCfgPPO.runner ):
+#         # run_name = ''
+#         checkpoint = 2000
+#         # load_run = "Nov02_22-20-21_"
+#         # load_run = "Nov02_09-31-03_"
+#         # load_run = "Nov02_13-32-38_"
+#         # load_run = "Nov02_19-17-17_"
+#         # load_run = "Nov02_22-20-21_" #1st real world
+#         load_run = "Mar18_16-43-43_"
+#         load_run = "Mar19_15-43-07_"
+#         # load_run = "Mar19_18-28-25_"
+#         load_run = "Mar21_11-01-03_"
+#         load_run = "Mar22_14-22-46_"
+#         # resume = True
+#         algorithm_class_name = 'ResidualPPO'
+#         max_iterations = 9000
+#         save_interval = 500
+#         obs_sizes = {"scaled_base_lin_vel": 3,
+#                     "scaled_base_ang_vel": 3,
+#                     "projected_gravity": 3,
+#                     "target_position": 2,
+#                     "object_position": 2,
+#                     "relative_dof": 12,
+#                     "scaled_dof_vel": 12,
+#                     "actions": 12}
+#         actor_obs =[["scaled_base_lin_vel",
+#                     "scaled_base_ang_vel",
+#                     "projected_gravity",
+#                     "relative_dof",
+#                     "scaled_dof_vel",
+#                     "actions"],
                     
-                    ["scaled_base_lin_vel",
-                    "scaled_base_ang_vel",
-                    "projected_gravity",
-                    "target_position",
-                    "object_position", 
-                    "relative_dof",
-                    "scaled_dof_vel",
-                    "actions"]
-                    ]
-        critic_obs = [                    
-                    ["scaled_base_lin_vel",
-                    "scaled_base_ang_vel",
-                    "projected_gravity",
-                    "target_position",
-                    "object_position",
-                    "relative_dof",
-                    "scaled_dof_vel",
-                    "actions"]
-                      ]
-        experiment_name = 'multiskill_object_push'
-        policy_class_name = 'ResidualActorCritic'
-        # skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/a1_flat/Jun21_17-35-58_/model_1500.pt"]
-        skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/a1_flat/Sep26_17-16-44_/model_1500.pt"]
+#                     ["scaled_base_lin_vel",
+#                     "scaled_base_ang_vel",
+#                     "projected_gravity",
+#                     "target_position",
+#                     "object_position", 
+#                     "relative_dof",
+#                     "scaled_dof_vel",
+#                     "actions"]
+#                     ]
+#         critic_obs = [                    
+#                     ["scaled_base_lin_vel",
+#                     "scaled_base_ang_vel",
+#                     "projected_gravity",
+#                     "target_position",
+#                     "object_position",
+#                     "relative_dof",
+#                     "scaled_dof_vel",
+#                     "actions"]
+#                       ]
+#         experiment_name = 'multiskill_object_push'
+#         policy_class_name = 'ResidualActorCritic'
+#         # skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/a1_flat/Jun21_17-35-58_/model_1500.pt"]
+#         skill_paths = ["/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/a1_flat/Sep26_17-16-44_/model_1500.pt"]
 
 # class A1MultiSkillObjectPushCfgPPO( LeggedRobotCfgPPO ): # doesnt train for even static target
 #     # todo early termination if robot is too far from object
@@ -2998,13 +2998,16 @@ class TwoLegBalanceCfgPPO( LeggedRobotCfgPPO ):
         load_run = "May21_16-29-35_"
         load_run = "May20_13-56-03_"
         load_run = "May23_17-38-31_"
+        load_run = "May27_19-22-33"
+        load_run = "May28_12-49-19_"
+        load_run = "May28_18-23-48_"
         # load_run = "May22_18-38-51_"
         save_interval = 1000
         # max_iterations = 15000
-        max_iterations = 10000
-        # checkpoint = 15000
+        max_iterations = 20000
+        # checkpoint = 10000
         resume = False
-        
+    
     class policy:
         init_noise_std = 0.001
         actor_hidden_dims = [512,256, 256, 128]
@@ -3083,20 +3086,21 @@ class TwoLegBalanceCfg( A1RoughCfg):
             heading = [-0, 0]
     
     class domain_rand:
-        randomize_friction = True
+        randomize_friction = False
         friction_range = [0.5, 1.25]
         friction_range_stddev = [0.01,0.5]
         # friction_range = [0.75, 1.0]
-        randomize_base_mass = True
+        randomize_base_mass = False
         added_mass_range = [-1., 1.]
         added_mass_range_stddev = [0.01, 0.5]
         push_robots = True
         push_interval_s = 1
         max_push_vel_xy = 1.
         randomize_com = True
-        com_shift_mass_range = [0.1, 2.0]
-        com_shift_mass_range_stddev = [0.01, 0.5]
-        distribution = 'uniform' # uniform, gaussian
+        com_shift_mass_range = [0.1, 3.0]
+        com_shift_mass_range_stddev = [0.01, 2.0]
+        com_sampled = [np.random.uniform(*com_shift_mass_range),np.random.uniform(*com_shift_mass_range_stddev)]
+        distribution = 'truncated_normal' # uniform, truncated_normal
     
     class rewards:
         class scales:

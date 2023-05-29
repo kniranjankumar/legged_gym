@@ -60,12 +60,14 @@ def evaluate(true_parameters, runner):
 
 def set_parameters(cfg, parameters):
     print("setting parameters...", parameters)
-    cfg.friction_range = [parameters['friction']]*2
-    cfg.added_mass_range = [parameters['mass']]*2
-    cfg.com_shift_mass_range = [parameters['com_shift']]*2
-    cfg.friction_range_stddev = [parameters['friction_stddev']]*2
-    cfg.added_mass_range_stddev = [parameters['mass_stddev']]*2
-    cfg.com_shift_mass_range_stddev = [parameters['com_shift_stddev']]*2
+    # cfg.friction_range = [parameters['friction']]*2
+    # cfg.added_mass_range = [parameters['mass']]*2
+    # cfg.com_shift_mass_range = [parameters['com_shift']]*2
+    # cfg.friction_range_stddev = [parameters['friction_stddev']]*2
+    # cfg.added_mass_range_stddev = [parameters['mass_stddev']]*2
+    # cfg.com_shift_mass_range_stddev = [parameters['com_shift_stddev']]*2
+    cfg.com_sampled = [parameters['com_shift'], parameters['com_shift_stddev']]
+    
     return cfg
     
 if __name__ == '__main__':
@@ -78,15 +80,24 @@ if __name__ == '__main__':
     bounds = {"friction":(0.5,1.25), "mass":(-1,1), "com_shift":(0.1,2),
               "friction_stddev":(0.01,0.5), "mass_stddev":(0.01,0.5), "com_shift_stddev":(0.01,0.5)
               }
-    true_parameters = {"friction":0.75, "mass":0.3, "com_shift":0.3,
-              "friction_stddev":0.1, "mass_stddev":0.1, "com_shift_stddev":0.1
+    # true_parameters = {"friction":0.75, "mass":0.3, "com_shift":0.3,
+    #           "friction_stddev":0.1, "mass_stddev":0.1, "com_shift_stddev":0.1
+    #           }
+    true_parameters = {
+                    #    "friction":0.75, 
+                    #    "mass":0.3, 
+                       "com_shift":args.com_mean,
+                    #    "friction_stddev":0.1, 
+                    #    "mass_stddev":0.1, 
+                       "com_shift_stddev":0.1
               }
 
-    checkpoints = [i*1000 for i in range(21)]
+    checkpoints = [i*1000 for i in range(20)]
+    # checkpoints = [11000]
     _, ppo_runner, train_cfg = train(args,env_cfg)
     rewards = []
     for ckpt in checkpoints:
-        path = "/home/niranjan/Projects/Fetch/curious_dog_isaac/legged_gym/logs/two_leg_balance/May24_13-02-00_/model_"+str(ckpt)+".pt"
+        path = "/nethome/nkannabiran3/Projects/curious_dog_isaac/legged_gym//logs/two_leg_balance/May28_18-26-34_/model_"+str(ckpt)+".pt"
         ppo_runner.load(path, load_optimizer=True)
     
         target = evaluate(true_parameters, ppo_runner)

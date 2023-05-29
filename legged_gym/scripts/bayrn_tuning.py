@@ -68,7 +68,7 @@ class BestOnlyTuningStrategy(TuningStrategy):
         
 def train(args, env_cfg,train_cfg=None):
     env, env_cfg = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
-    ppo_runner, train_cfg = task_registry.make_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg)
+    ppo_runner, train_cfg = task_registry.make_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg, log_root="/srv/share/nkannabiran3/Bayrn_a1_experiments/Bayrn")
     rew_buffer = ppo_runner.learn(num_learning_iterations=train_cfg.runner.max_iterations, init_at_random_ep_len=True)
     # evaluate and return the mean reward for Bayesian optimization
     # write eval code for target env
@@ -80,12 +80,12 @@ def evaluate(true_parameters, runner):
     env = runner.env
     # runner.resume=True
     set_parameters(env.cfg.domain_rand, true_parameters)
-    print(env.cfg.domain_rand.friction_range)
+    # print(env.cfg.domain_rand.friction_range)
     env.reset_dr_params()
     with torch.inference_mode():
         obs_,_ = env.reset()
     obs = obs_.clone()
-    print(env.device)
+    # print(env.device)
     # policy = runner.alg.act
     policy = runner.get_inference_policy()
     mean_total_rewards = []
@@ -108,12 +108,13 @@ def evaluate(true_parameters, runner):
 
 def set_parameters(cfg, parameters):
     print("setting parameters...", parameters)
-    cfg.friction_range = [parameters['friction']]*2
-    cfg.added_mass_range = [parameters['mass']]*2
-    cfg.com_shift_mass_range = [parameters['com_shift']]*2
-    cfg.friction_range_stddev = [parameters['friction_stddev']]*2
-    cfg.added_mass_range_stddev = [parameters['mass_stddev']]*2
-    cfg.com_shift_mass_range_stddev = [parameters['com_shift_stddev']]*2
+    # cfg.friction_range = [parameters['friction']]*2
+    # cfg.added_mass_range = [parameters['mass']]*2
+    # cfg.com_shift_mass_range = [parameters['com_shift']]*2
+    # cfg.friction_range_stddev = [parameters['friction_stddev']]*2
+    # cfg.added_mass_range_stddev = [parameters['mass_stddev']]*2
+    # cfg.com_shift_mass_range_stddev = [parameters['com_shift_stddev']]*2
+    cfg.com_sampled = [parameters['com_shift'], parameters['com_shift_stddev']]
     return cfg
     
 if __name__ == '__main__':
@@ -123,11 +124,21 @@ if __name__ == '__main__':
     # print()
     # print(args)
     # initialize Bayesian optimization
-    bounds = {"friction":(0.5,1.25), "mass":(-1,1), "com_shift":(0.1,2),
-              "friction_stddev":(0.01,0.5), "mass_stddev":(0.01,0.5), "com_shift_stddev":(0.01,0.5)
+    bounds = {
+            #   "friction":(0.5,1.25), 
+            #   "mass":(-1,1), 
+              "com_shift":tuple(env_cfg.domain_rand.com_shift_mass_range),
+            #   "friction_stddev":(0.01,0.5), 
+            #   "mass_stddev":(0.01,0.5), 
+              "com_shift_stddev":tuple(env_cfg.domain_rand.com_shift_mass_range_stddev)
               }
-    true_parameters = {"friction":0.75, "mass":0.3, "com_shift":0.3,
-              "friction_stddev":0.1, "mass_stddev":0.1, "com_shift_stddev":0.1
+    true_parameters = {
+                    #    "friction":0.75, 
+                    #    "mass":0.3, 
+                       "com_shift":args.com_mean,
+                    #    "friction_stddev":0.1, 
+                    #    "mass_stddev":0.1, 
+                       "com_shift_stddev":0.1
               }
     utility = UtilityFunction(kind='ucb',
                         kappa=2.576,
@@ -139,7 +150,7 @@ if __name__ == '__main__':
         pbounds=bounds,
         random_state=np.random.RandomState(45321),
     )
-    logger = JSONLogger(path="Bayrn/logs_improved.json")
+    logger = JSONLogger(path="Bayrn/"+datetime.now().strftime('%b%d_%H-%M-%S')+".json")
     optimizer.subscribe(Events.OPTIMIZATION_STEP, logger)
     num_threads = 2
     num_iterations = 10
@@ -155,9 +166,16 @@ if __name__ == '__main__':
             model_index, n_steps = tuningStrategy.get_tuning_for(list(next_point.values()))
             if train_cfg is None:
                 ## choose a nice start point
-                next_point = {"friction":0.875, "mass":0., "com_shift":1.05,
-                            "friction_stddev":0.5, "mass_stddev":0.5, "com_shift_stddev":0.5}
-                set_parameters(env_cfg.domain_rand, next_point)
+                init_point = {
+                            # "friction":0.875, 
+                            # "mass":0., 
+                            "com_shift":np.mean(env_cfg.domain_rand.com_shift_mass_range),
+                            # "friction_stddev":0.5, 
+                            # "mass_stddev":0.5, 
+                            "com_shift_stddev":np.mean(env_cfg.domain_rand.com_shift_mass_range_stddev)
+                            }
+                next_point = init_point
+                set_parameters(env_cfg.domain_rand, init_point)
                 print(env_cfg.domain_rand.friction_range)
                 _, ppo_runner, train_cfg = train(args,env_cfg)
                 target = evaluate(true_parameters, ppo_runner)
