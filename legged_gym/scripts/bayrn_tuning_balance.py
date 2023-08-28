@@ -68,7 +68,7 @@ class BestOnlyTuningStrategy(TuningStrategy):
         
 def train(args, env_cfg,train_cfg=None):
     env, env_cfg = task_registry.make_env(name=args.task, args=args, env_cfg=env_cfg)
-    ppo_runner, train_cfg = task_registry.make_residual_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg)#, log_root="/srv/share/nkannabiran3/Bayrn_a1_experiments/Bayrn")
+    ppo_runner, train_cfg = task_registry.make_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg)#, log_root="/srv/share/nkannabiran3/Bayrn_a1_experiments/Bayrn")
     rew_buffer = ppo_runner.learn(num_learning_iterations=train_cfg.runner.max_iterations, init_at_random_ep_len=True)
     # evaluate and return the mean reward for Bayesian optimization
     # write eval code for target env
@@ -93,7 +93,7 @@ def evaluate(true_parameters, runner):
     cur_reward_sum = torch.zeros(env.num_envs, dtype=torch.float, device=env.device)
     with torch.inference_mode():
  
-        for i in range(6*int(env.max_episode_length)):
+        for i in range(2*int(env.max_episode_length)):
             # print(i)
             
             actions = policy(obs)
@@ -114,7 +114,7 @@ def set_parameters(cfg, parameters):
     # cfg.friction_range_stddev = [parameters['friction_stddev']]*2
     # cfg.added_mass_range_stddev = [parameters['mass_stddev']]*2
     # cfg.com_shift_mass_range_stddev = [parameters['com_shift_stddev']]*2
-    cfg.com_sampled = [parameters['puck_mass'], parameters['puck_mass_stddev']]
+    cfg.com_sampled = [parameters['com_shift'], parameters['com_shift_stddev']]
     return cfg
     
 if __name__ == '__main__':
@@ -127,18 +127,18 @@ if __name__ == '__main__':
     bounds = {
             #   "friction":(0.5,1.25), 
             #   "mass":(-1,1), 
-              "puck_mass":tuple(env_cfg.domain_rand.puck_mass_range),
+              "com_shift":tuple(env_cfg.domain_rand.com_shift_mass_range),
             #   "friction_stddev":(0.01,0.5), 
             #   "mass_stddev":(0.01,0.5), 
-              "puck_mass_stddev":tuple(env_cfg.domain_rand.puck_mass_range_stddev)
+              "com_shift_stddev":tuple(env_cfg.domain_rand.com_shift_mass_range_stddev)
               }
     true_parameters = {
                     #    "friction":0.75, 
                     #    "mass":0.3, 
-                       "puck_mass":args.puck_mass,
+                       "com_shift":args.com_mean,
                     #    "friction_stddev":0.1, 
                     #    "mass_stddev":0.1, 
-                       "puck_mass_stddev":0.002
+                       "com_shift_stddev":0.1
               }
     utility = UtilityFunction(kind='ucb',
                         kappa=2.576,
@@ -153,10 +153,10 @@ if __name__ == '__main__':
     logger = JSONLogger(path="Bayrn/"+datetime.now().strftime('%b%d_%H-%M-%S')+".json")
     optimizer.subscribe(Events.OPTIMIZATION_STEP, logger)
     num_threads = 2
-    num_iterations = 30
+    num_iterations = 10
     # processes = []
     model_paths = []
-    tuningStrategy = BestOnlyTuningStrategy(1,1000)
+    tuningStrategy = BestOnlyTuningStrategy(5000,1000)
     train_cfg = None
     for i in range(num_iterations):
         # optimizer.maximize(init_points=5, n_iter=2000000)
@@ -169,10 +169,10 @@ if __name__ == '__main__':
                 init_point = {
                             # "friction":0.875, 
                             # "mass":0., 
-                            "puck_mass":np.mean(env_cfg.domain_rand.puck_mass_range),
+                            "com_shift":np.mean(env_cfg.domain_rand.com_shift_mass_range),
                             # "friction_stddev":0.5, 
                             # "mass_stddev":0.5, 
-                            "puck_mass_stddev":np.mean(env_cfg.domain_rand.puck_mass_range_stddev)
+                            "com_shift_stddev":np.mean(env_cfg.domain_rand.com_shift_mass_range_stddev)
                             }
                 next_point = init_point
                 set_parameters(env_cfg.domain_rand, init_point)
@@ -185,8 +185,6 @@ if __name__ == '__main__':
                 iteration = ppo_runner.current_learning_iteration
                 print("loading model:", model_index)
                 ppo_runner.load(model_paths[model_index], load_optimizer=True)
-                print("loaded model performance:", evaluate(true_parameters, ppo_runner))
-                # evaluate(true_parameters, ppo_runner)
                 ppo_runner.current_learning_iteration = iteration
                 # ppo_runner.resume=True
                 set_parameters(ppo_runner.env.cfg.domain_rand, next_point)

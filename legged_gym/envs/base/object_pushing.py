@@ -7,6 +7,7 @@ import isaacgym
 from legged_gym.envs import *
 from legged_gym.utils import  get_args, export_policy_as_jit, task_registry, Logger
 from legged_gym.envs.a1.a1_config import A1FlatCfg, A1RoughCfgPPO
+from scipy.stats import truncnorm
 import numpy as np
 import torch
             
@@ -35,7 +36,7 @@ class PushingRobot(LeggedRobot):
         # create some wrapper tensors for different slices
         self.all_root_states = gymtorch.wrap_tensor(actor_root_state)
         self.root_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,0,:]
-        self.cube_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,1,:]
+        self.puck_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,1,:]
         self.target_states = self.all_root_states.view(self.num_envs, self.num_actors,13)[:,2,:]
         self.dof_state = gymtorch.wrap_tensor(dof_state_tensor)#[:,0]
         self.dof_pos = self.dof_state.view(self.num_envs, self.num_dof, 2)[..., 0]
@@ -131,9 +132,9 @@ class PushingRobot(LeggedRobot):
         puck_asset_file = "urdf/puck.urdf"
         cube_asset_options = gymapi.AssetOptions()
         puck_asset_options = gymapi.AssetOptions()
-        puck_asset_options.density = 0.5
+        # puck_asset_options.density = 0.05
         
-        # cube_asset_options.density = 0.01
+        cube_asset_options.density = 0.01
         
         cube_asset = self.gym.load_asset(self.sim, asset_root, asset_file, cube_asset_options)
         puck_asset = self.gym.load_asset(self.sim, asset_root, puck_asset_file, puck_asset_options)
@@ -158,7 +159,7 @@ class PushingRobot(LeggedRobot):
         
         self.actor_handles = []
         self.envs = []
-        self.cube_handles = []
+        self.puck_handles = []
 
         for i in range(self.num_envs):
             # create env instance
@@ -170,12 +171,16 @@ class PushingRobot(LeggedRobot):
             start_pose.p = gymapi.Vec3(*pos)
             rigid_shape_props = self._process_rigid_shape_props(rigid_shape_props_asset, i)
             self.gym.set_asset_rigid_shape_properties(robot_asset, rigid_shape_props)
-            puck_rigid_shape_props = self._process_rigid_shape_props(puck_rigid_shape_props_asset, i)
-            self.gym.set_asset_rigid_shape_properties(puck_asset, puck_rigid_shape_props)
+
+            # puck_rigid_shape_props = self._process_puck_rigid_body_props(puck_rigid_shape_props_asset, i)
+            # self.gym.set_asset_rigid_shape_properties(puck_asset, puck_rigid_shape_props)
             actor_handle = self.gym.create_actor(env_handle, robot_asset, start_pose, self.cfg.asset.name, i, self.cfg.asset.self_collisions, 0)
             # self.gym.set_asset_rigid_shape_properties(cube_asset, rigid_shape_props)
 
-            cube_handle = self.gym.create_actor(env_handle, puck_asset, cube_pose, "puck", i, 0) # manipulate this cube
+            puck_handle = self.gym.create_actor(env_handle, puck_asset, cube_pose, "puck", i, 0) # manipulate this cube
+            cube_body_props = self.gym.get_actor_rigid_body_properties(env_handle, puck_handle)
+            cube_body_props = self._process_puck_rigid_body_props(cube_body_props, i)
+            self.gym.set_actor_rigid_body_properties(env_handle, puck_handle, cube_body_props, recomputeInertia=True)
             
             cube_handle2 = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube", self.num_envs+1, 0) #target marker
             self.gym.set_rigid_body_color(env_handle, cube_handle2, 0, gymapi.MESH_VISUAL, gymapi.Vec3(1,0,0))
@@ -187,7 +192,7 @@ class PushingRobot(LeggedRobot):
             self.gym.set_actor_rigid_body_properties(env_handle, actor_handle, body_props, recomputeInertia=True)
             self.envs.append(env_handle)
             self.actor_handles.append(actor_handle)
-            self.cube_handles.append(cube_handle)
+            self.puck_handles.append(puck_handle)
 
         self.feet_indices = torch.zeros(len(feet_names), dtype=torch.long, device=self.device, requires_grad=False)
         for i in range(len(feet_names)):
@@ -226,8 +231,8 @@ class PushingRobot(LeggedRobot):
             actor_ids = torch.flatten(torch.linspace(0, self.num_actors*self.num_envs-1,self.num_envs*self.num_actors,device=self.device).reshape(self.num_envs,self.num_actors)[env_ids])
             actor_ids_int32 = actor_ids.to(dtype=torch.int32)
             
-            self.cube_states[env_ids] = torch.tensor([0.6, 0.1, 0.2]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)
-            self.cube_states[env_ids,:3] += self.env_origins[env_ids]
+            self.puck_states[env_ids] = torch.tensor([0.25, 0.2, 0.2]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)
+            self.puck_states[env_ids,:3] += self.env_origins[env_ids]
             x, y = self.generate_target_location(len(env_ids))
             self.target_states[env_ids,0] = x
             self.target_states[env_ids,1] = y
@@ -235,25 +240,25 @@ class PushingRobot(LeggedRobot):
             
             # cube_state = torch.stack([torch.tensor([0.,0.,0.]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)]*self.num_envs,0)
             # cube_state[:,:3] = self.root_states[:,:3]+torch.tensor([[1,0,0]],device=self.device) 
-            all_bodies_root_state = torch.reshape(torch.cat((self.root_states,self.cube_states),1), (-1,13))
+            all_bodies_root_state = torch.reshape(torch.cat((self.root_states,self.puck_states),1), (-1,13))
             self.gym.set_actor_root_state_tensor_indexed(self.sim,
                                                         gymtorch.unwrap_tensor(self.all_root_states),
                                                         gymtorch.unwrap_tensor(actor_ids_int32), len(actor_ids_int32))
 
             for env_id in env_ids:
-                body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.cube_handles[env_id])
+                body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.puck_handles[env_id])
                 # print(body_props)
                 # print(self.gym.get_actor_rigid_body_index(self.envs[env_id], self.object_handles[env_id],"link_2"))
                 # print(self.gym.get_actor_rigid_body_names(self.envs[env_id], self.object_handles[env_id]))
-                
-                body_props[0].mass = np.random.uniform(0,1)+1
-                self.gym.set_actor_rigid_body_properties(self.envs[env_id], self.cube_handles[env_id], body_props, recomputeInertia=True)
+                body_props = self._process_puck_rigid_body_props(body_props, env_id)
+                # body_props[0].mass = np.random.uniform(0,1)+1
+                self.gym.set_actor_rigid_body_properties(self.envs[env_id], self.puck_handles[env_id], body_props, recomputeInertia=True)
                 # body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.object_handles[env_id])
                 # masses = [body.mass for body in body_props]
 
     def generate_target_location(self, num_candidates):
-        radius = 3.
-        random_angle = torch.rand(num_candidates, device=self.device)*np.pi #/2 +np.pi/4 #- np.pi/2
+        radius = 2.
+        random_angle = torch.rand(num_candidates, device=self.device)*np.pi/2*0 +np.pi/2 #- np.pi/2
         x = radius * torch.sin(random_angle)
         y = radius * torch.cos(random_angle)
         return x, y
@@ -273,7 +278,61 @@ class PushingRobot(LeggedRobot):
             self.gym.set_dof_state_tensor_indexed(self.sim,
                                                 gymtorch.unwrap_tensor(self.dof_state),
                                                 gymtorch.unwrap_tensor(env_ids_int32), len(env_ids_int32))
+    def reset_dr_params(self):
 
+        for i in range(self.num_envs):
+            # create env instance
+            env_handle = self.envs[i]
+            puck_handle = self.puck_handles[i]
+            # print("resetting friction")
+            # rigid_shape_props = self._process_rigid_shape_props(default_rigid_shape_props, i)
+            # self.gym.set_actor_rigid_shape_properties(env_handle, actor_handle, rigid_shape_props)
+
+            body_props = self.gym.get_actor_rigid_body_properties(env_handle, puck_handle)
+            body_props = self._process_puck_rigid_body_props(body_props, i)
+            self.gym.set_actor_rigid_body_properties(env_handle, puck_handle, body_props, recomputeInertia=True)
+            
+    def _process_puck_rigid_body_props(self, props, env_id):
+        # if env_id==0:
+        #     sum = 0
+        #     for i, p in enumerate(props):
+        #         sum += p.mass
+        #         print(f"Mass of body {i}: {p.mass} (before randomization)")
+        #     print(f"Total mass {sum} (before randomization)")
+        # randomize base mass
+        # props[0].mass = 1#+np.random.uniform(0,10) # 0.1
+        if env_id==0:
+            self.puck_mass = self.sample(self.cfg.domain_rand.puck_mass_sampled[0], 
+                                                       self.cfg.domain_rand.puck_mass_sampled[1], 
+                                                       self.cfg.domain_rand.puck_mass_range, 
+                                                       self.num_envs)
+        if self.cfg.domain_rand.randomize_puck_mass:
+            props[0].mass = self.puck_mass[env_id]
+        return props
+    
+    def sample(self, loc, scale, bounds, size):
+        """ Sample from chosen distribution"""
+        if self.cfg.domain_rand.distribution == "uniform":
+            return self.sample_uniform(bounds, size)
+        elif self.cfg.domain_rand.distribution == "truncated_normal":
+            return self.sample_truncated_normal(loc, scale, bounds, size)
+        else:
+            raise ValueError("Unknown distribution: {}".format(self.cfg.domain_rand.distribution))
+        
+    def sample_truncated_normal(self, loc, scale, bounds, size):
+        """ Sample truncated normal distribution"""
+        myclip_a, myclip_b = bounds
+        # print(bounds,loc,scale)
+        a, b = abs(myclip_a - loc) / scale, abs(myclip_b - loc) / scale
+        # print(a,b, loc,scale,size)
+        r = truncnorm.rvs(-a, b, loc, scale, size=size)
+        return r
+    
+    def sample_uniform(self,bounds, size):
+        """ Sample truncated normal distribution"""
+        r = np.random.uniform(bounds[0], bounds[1], size=size)
+        return r
+    
     def compute_observations(self):
         """ Computes observations
         """
@@ -299,11 +358,11 @@ class PushingRobot(LeggedRobot):
 
     def post_physics_step(self):
         self.agent_relative_cube_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
-                                                               [self.cube_states[:,3:7], self.cube_states[:,:3]])
+                                                               [self.puck_states[:,3:7], self.puck_states[:,:3]])
         # self.agent_relative_cube_pos[:,0] -= 0.3
         self.agent_relative_target_pos = self.get_relative_translation([self.root_states[:,3:7], self.root_states[:,:3]],
                                                                [self.target_states[:,3:7], self.target_states[:,:3]])
-        self.cube_relative_target_pos = self.get_relative_translation([self.cube_states[:,3:7], self.cube_states[:,:3]],
+        self.cube_relative_target_pos = self.get_relative_translation([self.puck_states[:,3:7], self.puck_states[:,:3]],
                                                                [self.target_states[:,3:7], self.target_states[:,:3]])
         # print(cube_pos[0], self.relative_cube_pos[0], t[0])
         super(PushingRobot, self).post_physics_step()
@@ -331,22 +390,29 @@ class PushingRobot(LeggedRobot):
         """
         max_vel = self.cfg.domain_rand.max_push_vel_xy
         self.root_states[:, 7:9] = torch_rand_float(-max_vel, max_vel, (self.num_envs, 2), device=self.device) # lin vel x/y
-        self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.root_states.contiguous()))
+        self.gym.set_actor_root_state_tensor(self.sim, gymtorch.unwrap_tensor(self.all_root_states.contiguous()))
     
     def _reward_object_target_dist(self,):
         
         target_distance = torch.clip(torch.norm(self.cube_relative_target_pos[:,:2], dim=1), 0)
-        rew = torch.exp(-target_distance)
+        rew = torch.exp(-target_distance/2)
         # print(rew[0])
         return rew
     
     def _reward_object_robot_dist(self,):
         
         target_distance = torch.clip(torch.norm(self.agent_relative_cube_pos[:,:2], dim=1), 0)
-        rew = torch.exp(-target_distance/2)
+        rew = torch.exp(-target_distance/3)
         # print(rew[0])
         return rew
-    
+ 
+    def _reward_robot_target_dist(self,):
+        
+        target_distance = torch.clip(torch.norm(self.agent_relative_target_pos[:,:2], dim=1),0,2)
+        rew = torch.exp(target_distance/2)
+        # print(rew[0])
+        return rew
+        
     def reset_idx(self, env_ids):        
         if len(env_ids) != 0:
             # success = (self.root_states[env_ids, 0]>(self.env_origins[env_ids,0]+4)).type(torch.float32)
@@ -358,7 +424,7 @@ class PushingRobot(LeggedRobot):
                 not_messy_init = self.episode_length_buf[env_ids] > 50
                 not_messy_init = not_messy_init | success
                 success = torch.masked_select(success, not_messy_init)
-                print("failed", env_ids, success)      
+                # print("failed", env_ids, success)      
                 
                 # failed_envs = torch.stack([torch.masked_select(self.target_states[:,0],self.success),
                 #                               torch.masked_select(self.target_states[:,1],self.success)], dim=1)
@@ -375,5 +441,6 @@ class PushingRobot(LeggedRobot):
     # def check_termination(self):
     #     super().check_termination()
     #     # self.reset_buf |= torch.norm(self.agent_relative_cube_pos[:,:2], dim=1) > 2.0
-    #     self.reset_buf |= torch.norm(self.cube_relative_target_pos[:,:2], dim=1) < 0.5
+    #     target_distance = torch.clip(torch.norm(self.agent_relative_target_pos[:,:2], dim=1),0,2)
+    #     self.reset_buf |= target_distance < 1.0
         

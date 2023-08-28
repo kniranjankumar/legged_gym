@@ -80,4 +80,7 @@ task_registry.register("interactive_targetreachv3", InteractiveRobot, Interactiv
 
 task_registry.register("two_leg_balance", TwoLegBalanceRobot, TwoLegBalanceCfg(), TwoLegBalanceCfgPPO())
 
+task_registry.register("bayrn_blockpush", PushingRobot, A1BayrnPushCfg(), A1BayrnPushCfgPPO())
+
+
 task_registry.register( "ballu", WalkingBallu, BalluCfg(), BalluCfgPPO() )

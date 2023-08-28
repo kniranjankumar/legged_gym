@@ -164,7 +164,9 @@ def get_args():
         {"name": "--num_envs", "type": int, "help": "Number of environments to create. Overrides config file if provided."},
         {"name": "--seed", "type": int, "help": "Random seed. Overrides config file if provided."},
         {"name": "--max_iterations", "type": int, "help": "Maximum number of training iterations. Overrides config file if provided."},
-        {"name": "--com_mean", "type": float, "help": "set true env parameter for Bayrn"}
+        # {"name": "--com_mean", "type": float, "help": "set true env parameter for Bayrn"},
+        {"name": "--puck_mass", "type": float, "help": "set true env parameter for Bayrn"}
+        
 
     ]
     # parse arguments
