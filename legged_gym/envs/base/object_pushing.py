@@ -178,9 +178,9 @@ class PushingRobot(LeggedRobot):
             # self.gym.set_asset_rigid_shape_properties(cube_asset, rigid_shape_props)
 
             puck_handle = self.gym.create_actor(env_handle, puck_asset, cube_pose, "puck", i, 0) # manipulate this cube
-            cube_body_props = self.gym.get_actor_rigid_body_properties(env_handle, puck_handle)
-            cube_body_props = self._process_puck_rigid_body_props(cube_body_props, i)
-            self.gym.set_actor_rigid_body_properties(env_handle, puck_handle, cube_body_props, recomputeInertia=True)
+            puck_body_props = self.gym.get_actor_rigid_body_properties(env_handle, puck_handle)
+            puck_body_props = self._process_puck_rigid_body_props(puck_body_props, i)
+            self.gym.set_actor_rigid_body_properties(env_handle, puck_handle, puck_body_props, recomputeInertia=True)
             
             cube_handle2 = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube", self.num_envs+1, 0) #target marker
             self.gym.set_rigid_body_color(env_handle, cube_handle2, 0, gymapi.MESH_VISUAL, gymapi.Vec3(1,0,0))
@@ -231,8 +231,8 @@ class PushingRobot(LeggedRobot):
             actor_ids = torch.flatten(torch.linspace(0, self.num_actors*self.num_envs-1,self.num_envs*self.num_actors,device=self.device).reshape(self.num_envs,self.num_actors)[env_ids])
             actor_ids_int32 = actor_ids.to(dtype=torch.int32)
             
-            self.puck_states[env_ids] = torch.tensor([0.25, 0.2, 0.2]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)
-            self.puck_states[env_ids,:3] += self.env_origins[env_ids]
+            self.puck_states[env_ids] = torch.tensor([0.6, 0.2, 0.085]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)
+            self.puck_states[env_ids,:2] += self.env_origins[env_ids,:2]
             x, y = self.generate_target_location(len(env_ids))
             self.target_states[env_ids,0] = x
             self.target_states[env_ids,1] = y
@@ -240,21 +240,21 @@ class PushingRobot(LeggedRobot):
             
             # cube_state = torch.stack([torch.tensor([0.,0.,0.]+[0.]*3+[1.]+[0.]*6, device=self.root_states.device)]*self.num_envs,0)
             # cube_state[:,:3] = self.root_states[:,:3]+torch.tensor([[1,0,0]],device=self.device) 
-            all_bodies_root_state = torch.reshape(torch.cat((self.root_states,self.puck_states),1), (-1,13))
+            # all_bodies_root_state = torch.reshape(torch.cat((self.root_states,self.puck_states),1), (-1,13))
             self.gym.set_actor_root_state_tensor_indexed(self.sim,
                                                         gymtorch.unwrap_tensor(self.all_root_states),
                                                         gymtorch.unwrap_tensor(actor_ids_int32), len(actor_ids_int32))
 
-            for env_id in env_ids:
-                body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.puck_handles[env_id])
-                # print(body_props)
-                # print(self.gym.get_actor_rigid_body_index(self.envs[env_id], self.object_handles[env_id],"link_2"))
-                # print(self.gym.get_actor_rigid_body_names(self.envs[env_id], self.object_handles[env_id]))
-                body_props = self._process_puck_rigid_body_props(body_props, env_id)
-                # body_props[0].mass = np.random.uniform(0,1)+1
-                self.gym.set_actor_rigid_body_properties(self.envs[env_id], self.puck_handles[env_id], body_props, recomputeInertia=True)
-                # body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.object_handles[env_id])
-                # masses = [body.mass for body in body_props]
+            # for env_id in env_ids:
+            #     body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.puck_handles[env_id])
+            #     # print(body_props)
+            #     # print(self.gym.get_actor_rigid_body_index(self.envs[env_id], self.object_handles[env_id],"link_2"))
+            #     # print(self.gym.get_actor_rigid_body_names(self.envs[env_id], self.object_handles[env_id]))
+            #     body_props = self._process_puck_rigid_body_props(body_props, env_id)
+            #     # body_props[0].mass = np.random.uniform(0,1)+1
+            #     self.gym.set_actor_rigid_body_properties(self.envs[env_id], self.puck_handles[env_id], body_props, recomputeInertia=True)
+            #     # body_props = self.gym.get_actor_rigid_body_properties(self.envs[env_id], self.object_handles[env_id])
+            #     # masses = [body.mass for body in body_props]
 
     def generate_target_location(self, num_candidates):
         radius = 2.
