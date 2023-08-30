@@ -180,6 +180,12 @@ class PushingRobot(LeggedRobot):
             puck_handle = self.gym.create_actor(env_handle, puck_asset, cube_pose, "puck", i, 0) # manipulate this cube
             puck_body_props = self.gym.get_actor_rigid_body_properties(env_handle, puck_handle)
             puck_body_props = self._process_puck_rigid_body_props(puck_body_props, i)
+            
+            puck_shape_props = self.gym.get_actor_rigid_shape_properties(env_handle, puck_handle)
+            puck_shape_props = self._process_puck_rigid_shape_props(puck_shape_props, i)
+            
+            self.gym.set_actor_rigid_shape_properties(env_handle, puck_handle, puck_shape_props)
+            
             self.gym.set_actor_rigid_body_properties(env_handle, puck_handle, puck_body_props, recomputeInertia=True)
             
             cube_handle2 = self.gym.create_actor(env_handle, cube_asset, cube_pose, "cube", self.num_envs+1, 0) #target marker
@@ -306,8 +312,25 @@ class PushingRobot(LeggedRobot):
                                                        self.cfg.domain_rand.puck_mass_sampled[1], 
                                                        self.cfg.domain_rand.puck_mass_range, 
                                                        self.num_envs)
+            # self.puck_friction = self.sample(self.cfg.domain_rand.puck_friction_sampled[0], 
+            #                                            self.cfg.domain_rand.puck_friction_sampled[1], 
+            #                                            self.cfg.domain_rand.puck_friction_range, 
+            #                                            self.num_envs)
         if self.cfg.domain_rand.randomize_puck_mass:
             props[0].mass = self.puck_mass[env_id]
+        # if self.cfg.domain_rand.randomize_puck_friction:
+        #     props[0].friction = self.puck_friction[env_id]
+        return props
+    
+    def _process_puck_rigid_shape_props(self, props, env_id):
+        if self.cfg.domain_rand.randomize_puck_friction:
+            if env_id == 0:
+                self.puck_friction = self.sample(self.cfg.domain_rand.puck_friction_sampled[0], 
+                                                       self.cfg.domain_rand.puck_friction_sampled[1], 
+                                                       self.cfg.domain_rand.puck_friction_range, 
+                                                       self.num_envs)
+            for i in range(len(props)):
+                props[i].friction = self.puck_friction[env_id]
         return props
     
     def sample(self, loc, scale, bounds, size):
